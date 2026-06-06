@@ -1,5 +1,3 @@
-WC2026 tracker.jsx
-
 import { useState, useCallback } from "react";
 
 // ─────────────────────────────────────────────

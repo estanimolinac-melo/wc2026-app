@@ -712,7 +712,7 @@ export default function App(){
   const runAnalysis=async()=>{
     setLoading(true);setError(null);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
+      const res=await fetch("https://wc2026-fetcher.onrender.com",{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:buildSystemPrompt(teams,updates),messages:[{role:"user",content:"Recalculate all championship win probabilities. Return only the JSON."}]})
       });

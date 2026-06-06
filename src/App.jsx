@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Flag, INITIAL_TEAMS, INITIAL_PLAYERS, FACTOR_WEIGHTS, PREDICTED_KNOCKOUT, INITIAL_GROUPS } from "./data.js";
+import { Flag, INITIAL_TEAMS, INITIAL_PLAYERS, FACTOR_WEIGHTS, PREDICTED_KNOCKOUT, INITIAL_GROUPS } from "./data.jsx";
 
 const probColor = p => p>=14?"#C9A84C":p>=8?"#8bb8f0":p>=4?"#2ecc71":"#8E9BAF";
 const POS_COLORS = { FWD:"#e74c3c", MID:"#2ecc71", DEF:"#8bb8f0", GK:"#C9A84C" };

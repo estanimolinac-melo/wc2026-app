@@ -1,8 +1,5 @@
 import { useState, useCallback } from "react";
 
-// ─────────────────────────────────────────────
-//  COUNTRY FLAGS (emoji + svg fallback map)
-// ─────────────────────────────────────────────
 const FLAG_URLS = {
   FRA:"https://flagcdn.com/w40/fr.png", ARG:"https://flagcdn.com/w40/ar.png",
   ESP:"https://flagcdn.com/w40/es.png", ENG:"https://flagcdn.com/w40/gb-eng.png",
@@ -14,202 +11,145 @@ const FLAG_URLS = {
   USA:"https://flagcdn.com/w40/us.png", KOR:"https://flagcdn.com/w40/kr.png",
   COL:"https://flagcdn.com/w40/co.png", TUR:"https://flagcdn.com/w40/tr.png",
   NOR:"https://flagcdn.com/w40/no.png", SEN:"https://flagcdn.com/w40/sn.png",
-  CRO:"https://flagcdn.com/w40/hr.png", DEN:"https://flagcdn.com/w40/dk.png",
-  SWE:"https://flagcdn.com/w40/se.png", EGY:"https://flagcdn.com/w40/eg.png",
-  AUT:"https://flagcdn.com/w40/at.png", SUI:"https://flagcdn.com/w40/ch.png",
-  POL:"https://flagcdn.com/w40/pl.png", UKR:"https://flagcdn.com/w40/ua.png",
-  GHA:"https://flagcdn.com/w40/gh.png", CMR:"https://flagcdn.com/w40/cm.png",
+  CRO:"https://flagcdn.com/w40/hr.png", SWE:"https://flagcdn.com/w40/se.png",
+  EGY:"https://flagcdn.com/w40/eg.png", AUT:"https://flagcdn.com/w40/at.png",
+  SUI:"https://flagcdn.com/w40/ch.png", GHA:"https://flagcdn.com/w40/gh.png",
   CIV:"https://flagcdn.com/w40/ci.png", SCO:"https://flagcdn.com/w40/gb-sct.png",
-  WAL:"https://flagcdn.com/w40/gb-wls.png", IRE:"https://flagcdn.com/w40/ie.png",
   ECU:"https://flagcdn.com/w40/ec.png", PAR:"https://flagcdn.com/w40/py.png",
   AUS:"https://flagcdn.com/w40/au.png", CPV:"https://flagcdn.com/w40/cv.png",
   IRQ:"https://flagcdn.com/w40/iq.png", ALG:"https://flagcdn.com/w40/dz.png",
-  JOR:"https://flagcdn.com/w40/jo.png", SAU:"https://flagcdn.com/w40/sa.png",
+  JOR:"https://flagcdn.com/w40/jo.png", KSA:"https://flagcdn.com/w40/sa.png",
   IRN:"https://flagcdn.com/w40/ir.png", QAT:"https://flagcdn.com/w40/qa.png",
   CZE:"https://flagcdn.com/w40/cz.png", RSA:"https://flagcdn.com/w40/za.png",
   BIH:"https://flagcdn.com/w40/ba.png", NZL:"https://flagcdn.com/w40/nz.png",
   HAI:"https://flagcdn.com/w40/ht.png", PAN:"https://flagcdn.com/w40/pa.png",
   CUR:"https://flagcdn.com/w40/cw.png", UZB:"https://flagcdn.com/w40/uz.png",
-  COD:"https://flagcdn.com/w40/cd.png", KSA:"https://flagcdn.com/w40/sa.png",
+  COD:"https://flagcdn.com/w40/cd.png", TUN:"https://flagcdn.com/w40/tn.png",
 };
 
-function Flag({id, size=24, style={}}){
+export function Flag({id, size=24, style={}}){
   const url = FLAG_URLS[id];
   if(!url) return null;
   return <img src={url} alt={id} style={{width:size,height:"auto",borderRadius:2,objectFit:"cover",flexShrink:0,...style}} />;
 }
 
-// ─────────────────────────────────────────────
-//  TEAM DATA
-// ─────────────────────────────────────────────
-const INITIAL_TEAMS = [
+export const INITIAL_TEAMS = [
   { id:"FRA", flag:"🇫🇷", name:"France",      group:"I", prob:18, peak:18, manager:"Deschamps",   cis:9.1, form:9, chemistry:8.9, change:0,
-    strengths:"#1 FIFA ranked. Deepest squad in tournament. Deschamps 14-year tenure. Mbappé, Tchouaméni, Griezmann, Saliba, Theo Hernández all in peak form. Highest Chemistry Score (8.9/10). Dembélé (Ballon d'Or 2025), Olise, and Doué form an explosive wide attacking trio alongside Mbappé. Perfect age balance.",
-    weaknesses:"Confirmed absences of Ekitike and Kamara. Deschamps' conservatism can stall against deep blocks. Attack is so front-loaded that midfield cover in transition can be exposed.",
-    rationale:"France leads because no team combines system depth, managerial experience, big-game record, and squad chemistry at the same level. Dembélé as Ballon d'Or winner and Olise's 41 goals+46 assists in two Bayern seasons make this the most dangerous attack at the tournament."
+    strengths:"#1 FIFA ranked. Deepest squad in tournament. Deschamps 14-year tenure. Mbappé, Tchouaméni, Griezmann, Saliba, Theo Hernández all in peak form. Dembélé (Ballon d'Or 2025), Olise (41 goals+46 assists at Bayern), and Doué form explosive wide attacking trio. Perfect age balance.",
+    weaknesses:"Confirmed absences of Ekitike and Kamara. Deschamps' conservatism can stall against deep blocks. Front-loaded attack can leave midfield transition cover exposed.",
+    rationale:"France leads because no team combines system depth, managerial experience, big-game record, and squad chemistry at the same level. Dembélé as Ballon d'Or winner and Olise's output make this the most dangerous attack at the tournament."
   },
   { id:"ARG", flag:"🇦🇷", name:"Argentina",   group:"J", prob:15, peak:15, manager:"Scaloni",    cis:9.4, form:8, chemistry:9.2, change:0,
-    strengths:"Highest Chemistry Score (9.2/10) and Manager CIS (9.4/10). Scaloni's 7+ years. Mac Allister, Enzo Fernández, De Paul midfield is most rehearsed trio at World Cup. Reigning champions. Lautaro, J. Álvarez elite striker depth.",
-    weaknesses:"Messi at 38 — physical availability across 8 matches is a genuine concern. Romero and Molina fitness doubts. Squad skewed older, compounding fatigue risk in second week. Lisandro Martínez likely third-choice CB.",
-    rationale:"Argentina's team cohesion is unmatched, but age-related fatigue risk and key injury doubts in defence prevent them from reaching France's ceiling."
+    strengths:"Highest Chemistry Score (9.2/10) and Manager CIS (9.4/10). Scaloni's 7+ years. Mac Allister, Enzo Fernández, De Paul — most rehearsed midfield trio. Reigning champions. Lautaro and J. Álvarez elite striker depth.",
+    weaknesses:"Messi at 38 — physical availability across 8 matches is a concern. Romero and Molina fitness doubts. Lisandro Martínez likely third-choice CB. Squad skewed older.",
+    rationale:"Argentina's team cohesion is unmatched but age-related fatigue risk and key injury doubts prevent them reaching France's probability ceiling."
   },
   { id:"ESP", flag:"🇪🇸", name:"Spain",       group:"H", prob:14, peak:14, manager:"De la Fuente",cis:8.7, form:9, chemistry:8.6, change:0,
-    strengths:"Euro 2024 and Nations League winners. Rodri-Pedri axis. Oyarzabal — scored in all 6 career finals. Yamal, Olmo, Dani Olmo. Highest competitive win rate (74%) of any manager. Positional play system is near-impossible to contain.",
-    weaknesses:"Samu Omorodion and Fermín López out. Yamal fitness is a race after hamstring injury in late April. Defensive depth behind first-choice CB pairing is thin.",
-    rationale:"Spain's form and system are exceptional but Yamal injury uncertainty and the confirmed absences of two strikers cap their probability just below Argentina's cohesion advantage."
+    strengths:"Euro 2024 and Nations League winners. Rodri-Pedri axis. Oyarzabal — scored in all 6 career finals. Yamal, Dani Olmo explosive. Highest competitive win rate (74%) of any manager.",
+    weaknesses:"Samu Omorodion and Fermín López out. Yamal fitness race after late-April hamstring injury. Defensive depth behind first-choice CB pairing is thin.",
+    rationale:"Spain's form and system are exceptional but Yamal injury uncertainty and confirmed striker absences cap their probability just below Argentina."
   },
   { id:"ENG", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", name:"England",    group:"L", prob:11, peak:11, manager:"Tuchel",      cis:7.8, form:8, chemistry:7.4, change:0,
     strengths:"Kane, Bellingham, Saka, Eze, Declan Rice, Marc Guéhi, Reece James. Most PL players of any squad. Tuchel's CL pedigree resolves structural fragility. No loss to top-10 nation in last 9 competitive matches.",
-    weaknesses:"Tuchel only 2 years in. Foden not selected for the squad. Palmer not selected. Ben White and Grealish absent. Set-piece defence historically vulnerable at tournaments.",
-    rationale:"England's individual quality and big-game record are elite, but two years of system-building under Tuchel and the absence of Foden and Palmer leave a creative ceiling gap vs. France/Spain."
+    weaknesses:"Tuchel only 2 years in — system still building. Foden and Palmer not selected for the squad. Ben White and Grealish absent. Set-piece defence historically vulnerable.",
+    rationale:"England's individual quality and big-game record are elite, but Foden/Palmer absences and 2 years of system-building leave a creative ceiling gap vs France/Spain."
   },
   { id:"BRA", flag:"🇧🇷", name:"Brazil",      group:"C", prob:9, peak:9, manager:"Ancelotti",  cis:7.4, form:7, chemistry:7.1, change:0,
-    strengths:"Vinicius Jr in extraordinary form. João Pedro (14 PL goals for Chelsea) as the starting #9. Raphinha (50+ goals in last 2 Barcelona seasons) as right winger. Six scorers in Panama warmup shows depth. Ancelotti's 4× CL trophy record.",
-    weaknesses:"Rodrygo (ACL), Militão (hamstring), Estêvão all confirmed out. Neymar absent for at least the opener with calf injury. Ancelotti only 2 years in. Casemiro's form being closely watched. Chemistry Score only 7.1/10.",
-    rationale:"Brazil's ceiling is world-class but their floor has dropped significantly. Rodrygo, Militão, and Estêvão absent in the same window is the largest injury burden of any top-8 side."
+    strengths:"Vinicius Jr in extraordinary form. João Pedro (14 PL goals for Chelsea) as the #9. Raphinha (50+ Barcelona goals in 2 seasons). Six scorers in Panama warmup. Ancelotti's 4× CL pedigree.",
+    weaknesses:"Rodrygo (ACL), Militão (hamstring), Estêvão all confirmed out. Neymar absent for opener. Ancelotti only 2 years in. Largest injury burden of any top-8 side. Chemistry Score only 7.1/10.",
+    rationale:"Brazil's ceiling is world-class but their floor has dropped significantly due to the most significant injury crisis of any contender."
   },
   { id:"GER", flag:"🇩🇪", name:"Germany",     group:"E", prob:8, peak:8, manager:"Nagelsmann", cis:7.5, form:8, chemistry:7.3, change:0,
-    strengths:"8-match winning streak. Wirtz-Musiala creative axis. Gyökeres-rival-quality strikers. Dominant possession metrics. Nagelsmann's proactive pressing. Lennart Karl emerging as third attacking star.",
-    weaknesses:"Gnabry and ter Stegen both out. Undav injury concern from Finland warmup. Havertz as only alternative striker. Nagelsmann still building international tournament experience. No major international trophy yet.",
-    rationale:"Germany's in-form trajectory and Wirtz-Musiala combination make them a genuine semi-final threat, but managerial inexperience and injury concerns in key positions limit their ceiling."
+    strengths:"8-match winning streak. Wirtz-Musiala creative axis. Lennart Karl emerging as third attacking star. Dominant possession metrics. Proactive pressing system.",
+    weaknesses:"Gnabry and ter Stegen both out. Undav injury concern from Finland warmup. No major international trophy yet under Nagelsmann.",
+    rationale:"Germany's form trajectory and Wirtz-Musiala combination make them a genuine semi-final threat, but managerial inexperience and injury concerns limit their ceiling."
   },
   { id:"POR", flag:"🇵🇹", name:"Portugal",    group:"K", prob:7, peak:7, manager:"Martínez",   cis:7.6, form:8, chemistry:7.8, change:0,
-    strengths:"2025 Nations League winners. Ronaldo, Bruno Fernandes, Bernardo Silva (Vitinha as elite DM), João Neves, Leão, Gonçalo Ramos. João Cancelo attacking threat from right back. Exceptional midfield depth.",
-    weaknesses:"Ronaldo at 41 as psychological and tactical crutch creates structural distortions. No significant trophy since 2016 despite quality. Knockout-stage fragility historically persistent.",
-    rationale:"Portugal's individual quality is top-5 in tournament but Ronaldo-dependency and knockout fragility prevent matching France or Spain's overall probability."
+    strengths:"2025 Nations League winners. Ronaldo, Bruno Fernandes, Bernardo Silva, Vitinha, João Neves, Leão, Gonçalo Ramos. João Cancelo attacking threat from right back.",
+    weaknesses:"Ronaldo at 41 creates structural distortions. No significant trophy since 2016 despite quality. Knockout-stage fragility historically persistent.",
+    rationale:"Portugal's individual quality is top-5 but Ronaldo-dependency and knockout fragility prevent matching France or Spain's overall probability."
   },
   { id:"MAR", flag:"🇲🇦", name:"Morocco",     group:"C", prob:5, peak:5, manager:"Regragui",   cis:8.2, form:8, chemistry:8.4, change:0,
-    strengths:"21-match unbeaten streak. Five clean sheets in last six matches. High Chemistry Score (8.4/10). Regragui's system deeply embedded. Hakimi expected fit. Saibari, Rahimi, El Kaabi in form.",
-    weaknesses:"Attacking depth beyond first XI limited. Fitness of key players under 8-match tournament pressure historically their ceiling. Reliant on defensive structure rather than attacking innovation.",
-    rationale:"Morocco are the tournament's most dangerous defensive unit. Most likely team to produce a knockout-round upset. Offensive ceiling caps their outright probability."
+    strengths:"21-match unbeaten streak. Five clean sheets in last six. Hakimi expected fit. Saibari, Rahimi, El Kaabi, Khannouss in form. Deeply embedded defensive system.",
+    weaknesses:"Attacking depth beyond first XI limited. Fitness under 8-match tournament pressure historically their ceiling.",
+    rationale:"Morocco are the tournament's most dangerous defensive unit and most likely team to produce a knockout upset. Offensive ceiling caps outright probability."
   },
   { id:"NED", flag:"🇳🇱", name:"Netherlands", group:"F", prob:4, peak:4, manager:"Koeman",     cis:6.8, form:7, chemistry:6.5, change:0,
-    strengths:"Van Dijk's defensive leadership. Dumfries and Frimpong (Liverpool) provide elite wing-back threat. Gakpo and the forward line have pace and directness.",
-    weaknesses:"Xavi Simons (ACL) and Matthijs de Ligt both out. Algeria warmup loss exposed creativity issues. Chemistry Score only 6.5/10. Koeman's management style has been questioned internally.",
-    rationale:"Netherlands have defensive quality to go far but the double injury loss of their two most dynamic players reduces them from genuine contender to dangerous outsider."
+    strengths:"Van Dijk's defensive leadership. Dumfries and Frimpong (Liverpool) elite wing-back threat. Gakpo pace and directness.",
+    weaknesses:"Xavi Simons (ACL) and Matthijs de Ligt both out. Algeria warmup loss (0-1) exposed creativity issues. Chemistry Score only 6.5/10.",
+    rationale:"Netherlands have the defensive quality to go far but the double injury loss of their two most dynamic players reduces them to dangerous outsider."
   },
   { id:"URU", flag:"🇺🇾", name:"Uruguay",     group:"H", prob:3, peak:3, manager:"Bielsa",     cis:7.9, form:7, chemistry:7.5, change:0,
-    strengths:"Bielsa's extreme pressing. Valverde (Real Madrid) world-class. Núñez and Araújo provide physical threat. Uruguay consistently over-performs expectations at World Cups.",
-    weaknesses:"High-intensity system risks fatigue in matches 6-8. No obvious creative #10 to unlock deep blocks. Squad depth significantly below top-6 nations.",
-    rationale:"Uruguay are the most dangerous team ranked below their probability. Bielsa's system can cause any team problems on a given day."
+    strengths:"Bielsa's extreme pressing. Valverde world-class. Núñez and Araújo physical threat. Uruguay consistently over-performs expectations.",
+    weaknesses:"High-intensity system risks fatigue in matches 6-8. No obvious creative #10 to unlock deep blocks. Squad depth below top-6 nations.",
+    rationale:"Uruguay are the most dangerous team ranked below their probability. Bielsa's system can cause problems on any given day."
   },
   { id:"BEL", flag:"🇧🇪", name:"Belgium",     group:"G", prob:2, peak:2, manager:"Garcia",     cis:6.5, form:7, chemistry:6.8, change:0,
-    strengths:"De Bruyne (117 caps, 36 goals) in his final World Cup. Tielemans at peak. Doku's pace. Lukaku returned and scored 90th international goal vs Croatia.",
+    strengths:"De Bruyne (117 caps, 36 goals) final World Cup. Tielemans at peak. Doku's pace. Lukaku returned and scored his 90th international goal vs Croatia.",
     weaknesses:"Lukaku played only 64 minutes of club football this season — physical readiness for 90-minute knockout matches a concern. Belgium consistently underperform at major tournaments.",
-    rationale:"Belgium's individual quality is top-tier but tournament record relative to squad quality, Lukaku's fitness, and ageing core reduce realistic ceiling to quarter-finals."
+    rationale:"Belgium's individual quality is top-tier but Lukaku's fitness and ageing core reduce realistic ceiling to quarter-finals."
   },
   { id:"JPN", flag:"🇯🇵", name:"Japan",       group:"F", prob:2, peak:2, manager:"Moriyasu",   cis:8.0, form:7, chemistry:7.6, change:0,
-    strengths:"Beat England at Wembley in March 2026. Five consecutive wins. Moriyasu's 8-year tenure. Kubo, Kamada, Doan elite-level. Pressing intensity rivals any team.",
-    weaknesses:"Lost Mitoma, Minamino, and Endo to injury. Late winner vs Iceland (87') showed difficulty breaking compact blocks. Small-squad depth concern in 48-team format.",
-    rationale:"Japan are the most underrated team in the tournament. Injury losses cap their realistic ceiling at the quarter-finals but they can beat any team on their day."
+    strengths:"Beat England at Wembley in March 2026. Five consecutive wins. Moriyasu's 8-year tenure. Kubo, Kamada, Doan elite-level. Pressing rivals any team.",
+    weaknesses:"Lost Mitoma (hamstring), Minamino, and Endo to injury. Late winner vs Iceland showed difficulty breaking compact blocks.",
+    rationale:"Japan are the most underrated team in the tournament. Injury losses cap their realistic ceiling at the quarter-finals."
   },
   { id:"MEX", flag:"🇲🇽", name:"Mexico",      group:"A", prob:2, peak:2, manager:"Aguirre",    cis:6.8, form:7, chemistry:7.0, change:0,
-    strengths:"Home advantage at Azteca and Akron. Raúl Jiménez leading the attack. Settled tactical system. Mexico have not lost a competitive home match in decades.",
-    weaknesses:"Attacking creativity functional rather than expressive. Limited world-class options in final third. Vulnerable against high-press systems.",
-    rationale:"Mexico's host advantage and defensive solidity make them a genuine R16 threat, but ceiling is quarter-finals given attacking quality deficit."
+    strengths:"Home advantage at Azteca and Akron. Raúl Jiménez and Santi Giménez leading the attack. Settled tactical system. Mexico unbeaten at competitive home matches.",
+    weaknesses:"Attacking creativity functional rather than expressive. Vulnerable against high-press systems.",
+    rationale:"Mexico's host advantage makes them a genuine R16 threat but ceiling is quarter-finals given attacking quality deficit."
   },
   { id:"CAN", flag:"🇨🇦", name:"Canada",      group:"B", prob:2, peak:2, manager:"Marsch",     cis:7.0, form:7, chemistry:6.9, change:0,
-    strengths:"Host-nation energy. Jonathan David, Buchanan, Eustáquio. Jesse Marsch's high-pressing system. First World Cup as host since 1986.",
-    weaknesses:"Alphonso Davies availability critical unknown. 3 red cards in last 4 matches — disciplinary concern. Depth beyond first XI drops significantly without Davies.",
-    rationale:"Canada's host advantage and pressing system give path to R16, but Davies uncertainty and disciplinary issues prevent higher probability."
+    strengths:"Host-nation energy. Jonathan David, Buchanan, Eustáquio. Marsch's high-pressing system. First World Cup as host since 1986.",
+    weaknesses:"Alphonso Davies availability critical unknown. 3 red cards in last 4 matches. Depth drops without Davies.",
+    rationale:"Host advantage and pressing system give path to R16 but Davies uncertainty prevents higher probability."
   },
   { id:"USA", flag:"🇺🇸", name:"USA",         group:"D", prob:2, peak:2, manager:"Pochettino",  cis:7.0, form:6, chemistry:6.5, change:0,
-    strengths:"Home crowd at SoFi, MetLife, and major venues. Pulisic broke scoring drought vs Senegal. McKennie (Juventus) at peak of career. Pochettino's tactical intelligence.",
-    weaknesses:"Pattern of conceding two-goal leads. Defensive transition errors recurring. Chemistry Score only 6.5/10.",
-    rationale:"USA's home advantage gives knockout potential, but defensive fragility and limited tournament pedigree keep them as dark horse."
+    strengths:"Home crowd at SoFi, MetLife. Pulisic broke scoring drought vs Senegal. McKennie at career peak. Pochettino's tactical intelligence.",
+    weaknesses:"Pattern of conceding two-goal leads. Defensive transition errors (Robinson giveaways) recurring. Chemistry Score 6.5/10.",
+    rationale:"Home advantage gives knockout potential but defensive fragility and limited tournament pedigree keep them as dark horse."
   },
   { id:"KOR", flag:"🇰🇷", name:"South Korea", group:"A", prob:1, peak:1, manager:"Hong",       cis:6.5, form:6, chemistry:6.8, change:0,
-    strengths:"Son Heung-min (now at LAFC) scored first-half brace vs Trinidad. Kim Min-jae (Bayern) anchors defence. High pressing intensity.",
-    weaknesses:"Overly Son-dependent. Without his direct contribution the attack lacks plan B. Son at LAFC — less elite-level weekly match sharpness than Premier League.",
-    rationale:"South Korea's path to R16 is realistic, but ceiling determined almost entirely by Son's availability and form."
+    strengths:"Son Heung-min (LAFC) scored brace vs Trinidad. Kim Min-jae (Bayern) anchors defence. High pressing intensity.",
+    weaknesses:"Overly Son-dependent. Son at LAFC has less elite-level weekly sharpness than Premier League.",
+    rationale:"Path to R16 is realistic but ceiling determined almost entirely by Son's availability and form."
   },
   { id:"COL", flag:"🇨🇴", name:"Colombia",    group:"K", prob:1, peak:1, manager:"Lorenzo",    cis:6.2, form:7, chemistry:7.0, change:0,
-    strengths:"Luis Díaz (Bayern Munich) outstanding vs Costa Rica. James Rodríguez experience. Technical quality in midfield.",
-    weaknesses:"Defensive concentration drops when comfortable. Depth beyond Díaz in attack limited. Lorenzo's CIS (6.2) lowest of any major contender.",
+    strengths:"Luis Díaz (Bayern Munich) outstanding vs Costa Rica. James Rodríguez experience. Technical midfield quality.",
+    weaknesses:"Defensive concentration drops when comfortable. Depth beyond Díaz limited. Lorenzo's CIS lowest of any contender.",
     rationale:"Colombia have talent for a deep run but face Portugal in projected R32 — their ceiling test."
   },
   { id:"TUR", flag:"🇹🇷", name:"Turkey",      group:"D", prob:1, peak:1, manager:"Montella",   cis:6.3, form:6, chemistry:6.5, change:0,
-    strengths:"4-0 vs North Macedonia showed elite pressing. Kenan Yıldız (Juventus, 20) and Arda Güler (Real Madrid, 21) — two of the best young players in the tournament. Young, energetic squad.",
-    weaknesses:"No meaningful big-game tournament experience at knockout level recently. Defensive depth ordinary.",
-    rationale:"Turkey are this tournament's most dangerous second-tier team — capable of a R16 exit but unlikely to have tools to go further against elite opposition."
+    strengths:"Kenan Yıldız (Juventus, 20) and Arda Güler (Real Madrid, 21) — two of the best young players in the tournament. 4-0 vs North Macedonia showed elite pressing.",
+    weaknesses:"No meaningful big-game knockout experience recently. Defensive depth ordinary.",
+    rationale:"Tournament's most dangerous second-tier team. Capable of R16 exit but unlikely to go further against elite opposition."
   },
 ];
 
-const INITIAL_GROUPS = {
-  A:{ name:"A", teams:[{id:"MEX",flag:"🇲🇽",name:"Mexico",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"KOR",flag:"🇰🇷",name:"South Korea",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"CZE",flag:"🇨🇿",name:"Czechia",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"RSA",flag:"🇿🇦",name:"South Africa",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  B:{ name:"B", teams:[{id:"CAN",flag:"🇨🇦",name:"Canada",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"SUI",flag:"🇨🇭",name:"Switzerland",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"BIH",flag:"🇧🇦",name:"Bosnia-Herz.",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"QAT",flag:"🇶🇦",name:"Qatar",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  C:{ name:"C", teams:[{id:"MAR",flag:"🇲🇦",name:"Morocco",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"BRA",flag:"🇧🇷",name:"Brazil",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"SCO",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",name:"Scotland",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"HAI",flag:"🇭🇹",name:"Haiti",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  D:{ name:"D", teams:[{id:"USA",flag:"🇺🇸",name:"USA",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"TUR",flag:"🇹🇷",name:"Turkey",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"PAR",flag:"🇵🇾",name:"Paraguay",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"AUS",flag:"🇦🇺",name:"Australia",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  E:{ name:"E", teams:[{id:"GER",flag:"🇩🇪",name:"Germany",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"CIV",flag:"🇨🇮",name:"Ivory Coast",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"ECU",flag:"🇪🇨",name:"Ecuador",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"CUR",flag:"🇨🇼",name:"Curaçao",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  F:{ name:"F", teams:[{id:"NED",flag:"🇳🇱",name:"Netherlands",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"JPN",flag:"🇯🇵",name:"Japan",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"SWE",flag:"🇸🇪",name:"Sweden",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"TUN",flag:"🇹🇳",name:"Tunisia",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  G:{ name:"G", teams:[{id:"BEL",flag:"🇧🇪",name:"Belgium",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"EGY",flag:"🇪🇬",name:"Egypt",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"IRN",flag:"🇮🇷",name:"Iran",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"NZL",flag:"🇳🇿",name:"New Zealand",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  H:{ name:"H", teams:[{id:"ESP",flag:"🇪🇸",name:"Spain",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"URU",flag:"🇺🇾",name:"Uruguay",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"KSA",flag:"🇸🇦",name:"Saudi Arabia",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"CPV",flag:"🇨🇻",name:"Cape Verde",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  I:{ name:"I", teams:[{id:"FRA",flag:"🇫🇷",name:"France",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"NOR",flag:"🇳🇴",name:"Norway",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"SEN",flag:"🇸🇳",name:"Senegal",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"IRQ",flag:"🇮🇶",name:"Iraq",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  J:{ name:"J", teams:[{id:"ARG",flag:"🇦🇷",name:"Argentina",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"AUT",flag:"🇦🇹",name:"Austria",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"ALG",flag:"🇩🇿",name:"Algeria",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"JOR",flag:"🇯🇴",name:"Jordan",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  K:{ name:"K", teams:[{id:"POR",flag:"🇵🇹",name:"Portugal",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"COL",flag:"🇨🇴",name:"Colombia",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"COD",flag:"🇨🇩",name:"Congo DR",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"UZB",flag:"🇺🇿",name:"Uzbekistan",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-  L:{ name:"L", teams:[{id:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",name:"England",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"CRO",flag:"🇭🇷",name:"Croatia",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"GHA",flag:"🇬🇭",name:"Ghana",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"PAN",flag:"🇵🇦",name:"Panama",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
-};
-
-// ─────────────────────────────────────────────
-//  BRACKET DATA
-// ─────────────────────────────────────────────
-const PREDICTED_KNOCKOUT = [
-  { round:"Round of 32", matches:[
-    {a:{id:"MEX",flag:"🇲🇽",name:"Mexico",prob:68},b:{id:"BIH",flag:"🇧🇦",name:"Bosnia-Herz.",prob:32},winner:"Mexico",aS:"Host advantage, Jiménez leadership, defensive solidity",bS:"Competitive European midfield pedigree",rat:"Mexico's home crowd at Azteca and Aguirre's tactical stability edge past Bosnia's limited World Cup experience."},
-    {a:{id:"KOR",flag:"🇰🇷",name:"South Korea",prob:57},b:{id:"SEN",flag:"🇸🇳",name:"Senegal",prob:43},winner:"South Korea",aS:"Son's brilliance, Kim Min-jae defensive anchor, cohesive press",bS:"Mané's 54 international goals, Sarr and Diarra support",rat:"Closest R32 matchup. Son vs Mané defines it. South Korea's collective system edges Senegal's individual brilliance."},
-    {a:{id:"MAR",flag:"🇲🇦",name:"Morocco",prob:64},b:{id:"SCO",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",name:"Scotland",prob:36},winner:"Morocco",aS:"21-match unbeaten, 5 clean sheets in 6, Hakimi fit",bS:"Physical intensity, set-piece threat, Gyökeres (Arsenal) if selected",rat:"Morocco's defensive system and 21-match unbeaten run too strong for Scotland's physical approach."},
-    {a:{id:"BRA",flag:"🇧🇷",name:"Brazil",prob:71},b:{id:"GHA",flag:"🇬🇭",name:"Ghana",prob:29},winner:"Brazil",aS:"Vinicius, Raphinha, João Pedro — elite attacking trio",bS:"Physical resilience, Antoine Semenyo's pace, emotional intensity",rat:"Brazil's technical quality significantly superior. Ghana can compete physically but lack sustained quality to prevent Brazil controlling games."},
-    {a:{id:"CAN",flag:"🇨🇦",name:"Canada",prob:59},b:{id:"CZE",flag:"🇨🇿",name:"Czechia",prob:41},winner:"Canada",aS:"Host energy, Marsch pressing, Jonathan David",bS:"Technical European discipline, competitive midfield",rat:"Canada's host advantage is the swing factor in a genuinely close tie. Without Davies drops to 55-45 but collective pressing should edge through."},
-    {a:{id:"USA",flag:"🇺🇸",name:"USA",prob:62},b:{id:"ALG",flag:"🇩🇿",name:"Algeria",prob:38},winner:"USA",aS:"Pulisic, McKennie, home crowd, Pochettino flexibility",bS:"Beat Netherlands 1-0 in warmup — real danger. Strong defensive block and lethal counter.",rat:"Algeria's Netherlands warmup result is a legitimate warning. USA's home advantage and Pochettino's intelligence edges it in a tight, tactical game."},
-    {a:{id:"GER",flag:"🇩🇪",name:"Germany",prob:74},b:{id:"KSA",flag:"🇸🇦",name:"Saudi Arabia",prob:26},winner:"Germany",aS:"8-match winning streak, Wirtz-Musiala axis, 656 passes vs Finland",bS:"Disciplined low-block, dangerous counter, beat Argentina at 2022 WC",rat:"Germany's attacking creativity and possession dominance should prove too much. Saudi Arabia can frustrate but ultimately lack quality to sustain a shock."},
-    {a:{id:"NED",flag:"🇳🇱",name:"Netherlands",prob:66},b:{id:"PAR",flag:"🇵🇾",name:"Paraguay",prob:34},winner:"Netherlands",aS:"Van Dijk authority, Gakpo pace, Frimpong and Dumfries wing-back threat",bS:"Physical South American resilience, difficult to break down",rat:"Netherlands' individual quality prevails despite Simons/De Ligt absences. Paraguay will make it uncomfortable but lack the quality to capitalise."},
-    {a:{id:"BEL",flag:"🇧🇪",name:"Belgium",prob:61},b:{id:"EGY",flag:"🇪🇬",name:"Egypt",prob:39},winner:"Belgium",aS:"De Bruyne final WC motivation, Tielemans, Doku pace, Courtois",bS:"Salah (54 international goals) big-game experience, defensive structure",rat:"Most emotionally charged R32 matchup. Salah vs De Bruyne is generational. Belgium's collective system edges it but Egypt with a fully fit Salah can win this."},
-    {a:{id:"JPN",flag:"🇯🇵",name:"Japan",prob:54},b:{id:"SWE",flag:"🇸🇪",name:"Sweden",prob:46},winner:"Japan",aS:"Beat England at Wembley March 2026, 5-match win streak, Moriyasu's 8-year system",bS:"Isak (Liverpool) world-class striker, Gyökeres scored WC playoff hat-trick, physical directness",rat:"Closest probability matchup of the round. Sweden's Isak is a match-winner. Japan's system more sophisticated but Mitoma and Endo injury losses felt here."},
-    {a:{id:"ESP",flag:"🇪🇸",name:"Spain",prob:80},b:{id:"CIV",flag:"🇨🇮",name:"Ivory Coast",prob:20},winner:"Spain",aS:"Euro 2024 & Nations League winners, Rodri-Pedri-Yamal/Olmo axis",bS:"Physical athleticism, AFCON experience, Haller quality",rat:"Spain's most comfortable predicted matchup. Possession system perfectly designed to neutralise physical opponents."},
-    {a:{id:"URU",flag:"🇺🇾",name:"Uruguay",prob:55},b:{id:"TUR",flag:"🇹🇷",name:"Turkey",prob:45},winner:"Uruguay",aS:"Bielsa's extreme press, Valverde world-class, Núñez physical threat",bS:"Yıldız-Güler young superstar duo, 4-0 vs North Macedonia form",rat:"Two tournament's best-pressing systems against each other. Valverde vs Turkey's midfield is the key duel. Uruguay's big-game experience edges it."},
-    {a:{id:"FRA",flag:"🇫🇷",name:"France",prob:78},b:{id:"NOR",flag:"🇳🇴",name:"Norway",prob:22},winner:"France",aS:"#1 FIFA rank, Mbappé, Dembélé, Olise, Doué — deepest attack ever assembled",bS:"Haaland — 55 goals in 49 Norway caps, Strand Larsen proved capable cover, Nusa direct",rat:"Haaland is a genuine one-man army but France's Upamecano-Saliba defensive structure is built to neutralise physical centre-forwards. Mbappé's counter-threat is decisive."},
-    {a:{id:"ARG",flag:"🇦🇷",name:"Argentina",prob:73},b:{id:"AUT",flag:"🇦🇹",name:"Austria",prob:27},winner:"Argentina",aS:"9.2/10 chemistry, Scaloni's 7-year system, Mac Allister-Enzo-De Paul midfield",bS:"Rangnick's high-press Red Bull system, best pass-suppression rate at tournament",rat:"Austria's pressing is Argentina's worst stylistic nightmare. But Argentina's 2022 championship DNA and Scaloni's 9.4 CIS is decisive in tight moments."},
-    {a:{id:"POR",flag:"🇵🇹",name:"Portugal",prob:77},b:{id:"COL",flag:"🇨🇴",name:"Colombia",prob:23},winner:"Portugal",aS:"Nations League winners, Bruno Fernandes, Bernardo Silva, João Neves depth",bS:"Luis Díaz (Bayern Munich) outstanding, James Rodríguez experience",rat:"Portugal's European quality prevails but Díaz at his best gives Colombia a genuine chance. The most likely Colombia upset scenario involves Díaz running at Cancelo repeatedly."},
-    {a:{id:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",name:"England",prob:71},b:{id:"CRO",flag:"🇭🇷",name:"Croatia",prob:29},winner:"England",aS:"Kane, Bellingham, Saka, Eze, Declan Rice — elite depth. No loss to top-10 in last 9.",bS:"Modrić still controlling games at 40, Gvardiol explosive if fit, knockout experience",rat:"England significantly stronger than the Croatia they drew with in recent tournaments. Tuchel's tactical prep removes historical structural fragility."},
-  ]},
-  { round:"Round of 16", matches:[
-    {a:{id:"MAR",flag:"🇲🇦",name:"Morocco",prob:59},b:{id:"MEX",flag:"🇲🇽",name:"Mexico",prob:41},winner:"Morocco",aS:"Defensive fortress, 21-match unbeaten streak, Regragui's system",bS:"Home crowd still present, Aguirre's pragmatic control, Jiménez",rat:"Mexico's host advantage makes this close. Morocco's defensive system, built for exactly this type of match, edges it on quality and big-game composure."},
-    {a:{id:"BRA",flag:"🇧🇷",name:"Brazil",prob:66},b:{id:"KOR",flag:"🇰🇷",name:"South Korea",prob:34},winner:"Brazil",aS:"Vinicius, Raphinha, second-half bench depth, Ancelotti's management",bS:"Son's individual brilliance, collective pressing intensity, Kim Min-jae",rat:"South Korea can hurt Brazil through Son on transitions, but Brazil's collective quality and depth is too great over 90 minutes."},
-    {a:{id:"GER",flag:"🇩🇪",name:"Germany",prob:64},b:{id:"CAN",flag:"🇨🇦",name:"Canada",prob:36},winner:"Germany",aS:"8-match winning streak, Wirtz-Musiala creative dominance",bS:"Home crowd still present, high-press disruption, Davies if fit",rat:"Host-nation advantage makes this closer than the quality gap suggests. If Davies is fit, Canada can physically match Germany. But German technical quality and winning momentum prevails."},
-    {a:{id:"NED",flag:"🇳🇱",name:"Netherlands",prob:55},b:{id:"USA",flag:"🇺🇸",name:"USA",prob:45},winner:"Netherlands",aS:"Van Dijk leadership, defensive solidity, Gakpo",bS:"Pochettino's tactical adaptability, home crowd at peak intensity, McKennie",rat:"USA's most dangerous potential upset. Pochettino against injury-weakened Netherlands. Home crowd at MetLife or SoFi makes this genuinely close. Netherlands individual quality edges it."},
-    {a:{id:"ESP",flag:"🇪🇸",name:"Spain",prob:72},b:{id:"JPN",flag:"🇯🇵",name:"Japan",prob:28},winner:"Spain",aS:"Possession dominance, Rodri-Pedri axis, Yamal/Olmo creativity",bS:"Beat England at Wembley. Collective pressing system designed to disrupt possession teams.",rat:"Japan are one of the few teams whose pressing system genuinely threatens Spain's build-up. But Spain's technical quality under pressure — especially Rodri — neutralises Japan's trap."},
-    {a:{id:"FRA",flag:"🇫🇷",name:"France",prob:68},b:{id:"BEL",flag:"🇧🇪",name:"Belgium",prob:32},winner:"France",aS:"#1 FIFA rank, deepest squad, Deschamps tournament management, Dembélé-Olise width",bS:"De Bruyne final WC peak motivation, Courtois knows French players intimately",rat:"Repeat of 2018 quarter-final. De Bruyne is elite in big games but Tchouaméni-Griezmann midfield neutralises Belgium's creativity. Mbappé's pace behind the line is decisive."},
-    {a:{id:"ARG",flag:"🇦🇷",name:"Argentina",prob:63},b:{id:"URU",flag:"🇺🇾",name:"Uruguay",prob:37},winner:"Argentina",aS:"9.2/10 chemistry, Messi's tournament experience, Mac Allister-Enzo axis",bS:"Bielsa's press is Argentina's worst stylistic nightmare. Valverde vs Enzo is the defining duel.",rat:"The South American derby is the most emotionally charged R16 matchup. Bielsa's press will cause Argentina the most problems of any team they face. Argentina's championship DNA edges it."},
-    {a:{id:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",name:"England",prob:60},b:{id:"POR",flag:"🇵🇹",name:"Portugal",prob:40},winner:"England",aS:"Tuchel's tactical preparation, no loss to top-10 in last 9, Bellingham vs Bruno Fernandes",bS:"Nations League winners, Bernardo Silva intelligence, Ronaldo's psychological weight, João Neves",rat:"England vs Portugal is the R16 match of the tournament. Tuchel's structural solidity edges it — but Bernardo Silva in the spaces behind Bellingham is the Portuguese key."},
-  ]},
-  { round:"Quarter-Finals", matches:[
-    {a:{id:"BRA",flag:"🇧🇷",name:"Brazil",prob:58},b:{id:"MAR",flag:"🇲🇦",name:"Morocco",prob:42},winner:"Brazil",aS:"Individual quality, Vinicius vs Hakimi world-class wide duel",bS:"Most disciplined defensive unit in tournament, 2022 semi-final experience",rat:"Morocco's defensive system is the only credible obstacle Brazil face before the semi-finals. Vinicius vs Hakimi is the match-within-the-match."},
-    {a:{id:"GER",flag:"🇩🇪",name:"Germany",prob:53},b:{id:"NED",flag:"🇳🇱",name:"Netherlands",prob:47},winner:"Germany",aS:"8-match winning streak, Wirtz-Musiala vs Dutch midfield",bS:"Van Dijk defensive authority, counter-attack pace through Gakpo, Frimpong",rat:"Closest quarter-final. Germany's attacking creativity vs Netherlands' counter-attack efficiency. Germany's form and momentum tips it by the narrowest margin."},
-    {a:{id:"FRA",flag:"🇫🇷",name:"France",prob:67},b:{id:"ESP",flag:"🇪🇸",name:"Spain",prob:33},winner:"France",aS:"Defensive solidity, Deschamps big-game management, Mbappé pace behind Carvajal",bS:"Rodri-Pedri possession system most complete in tournament. De la Fuente won everything.",rat:"The match of the tournament. Spain's possession vs France's counter. Deschamps' conservatism perfectly calibrated for this opponent. Mbappé's pace behind Carvajal is France's decisive weapon."},
-    {a:{id:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",name:"England",prob:55},b:{id:"ARG",flag:"🇦🇷",name:"Argentina",prob:45},winner:"England",aS:"Tuchel's tactical discipline, Kane big-game goals, Bellingham's control, home tournament",bS:"Argentina's championship DNA, Scaloni's 9.4 CIS, Mac Allister-Enzo cohesion, Messi",rat:"England's best ever chance of defeating Argentina in competitive football. Tuchel's structural solidity and England's home tournament confidence edges it in a match decided by a single moment."},
-  ]},
-  { round:"Semi-Finals", matches:[
-    {a:{id:"FRA",flag:"🇫🇷",name:"France",prob:61},b:{id:"BRA",flag:"🇧🇷",name:"Brazil",prob:39},winner:"France",aS:"Deepest squad, Deschamps' tournament management mastery, Saliba-Upamecano axis",bS:"Vinicius Jr at peak, Ancelotti's CL pedigree, Raphinha-João Pedro combination",rat:"France's defensive organisation under Saliba and Upamecano is designed for Vinicius' type of threat. Mbappé's counter-threat in transition is the decisive French advantage."},
-    {a:{id:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",name:"England",prob:57},b:{id:"GER",flag:"🇩🇪",name:"Germany",prob:43},winner:"England",aS:"Home tournament atmosphere, Bellingham-Kane axis, Tuchel knows German football",bS:"Wirtz-Musiala partnership, 8-match winning streak momentum",rat:"England's home advantage in North America with a predominantly England-supporting crowd. Tuchel's tactical preparation for Wirtz and Musiala is uniquely deep. England's structural discipline edges it."},
-  ]},
-  { round:"Final — July 19, MetLife", matches:[
-    {a:{id:"FRA",flag:"🇫🇷",name:"France",prob:56},b:{id:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",name:"England",prob:44},winner:"France",aS:"#1 FIFA rank, Deschamps 14-year system, Dembélé-Olise-Mbappé attack, deepest squad",bS:"England's best-prepared squad in a generation, Tuchel's genius, home-tournament crowd support",rat:"France's tournament experience, squad depth, Chemistry Score 8.9/10, and Deschamps' 14 years deliver the narrowest of final victories. England are runners-up — their best result since 1966."},
-  ]},
+export const FACTOR_WEIGHTS = [
+  { label:"Recent Team Form",              pct:16, cat:"team",    color:"#2ecc71" },
+  { label:"Big-Game Record",               pct:14, cat:"team",    color:"#2ecc71" },
+  { label:"Roster Continuity & Chemistry", pct:13, cat:"team",    color:"#2ecc71" },
+  { label:"Possession / xG / Tactical",    pct:11, cat:"team",    color:"#2ecc71" },
+  { label:"Key Injuries & Squad Depth",    pct:10, cat:"team",    color:"#2ecc71" },
+  { label:"Age Balance & Maturity",        pct: 8, cat:"team",    color:"#2ecc71" },
+  { label:"Manager Profile (CIS)",         pct:11, cat:"manager", color:"#8bb8f0" },
+  { label:"Individual Player Form (IPFI)", pct: 6, cat:"player",  color:"#C9A84C" },
+  { label:"Top-5 League Representation",   pct: 2, cat:"context", color:"#8E9BAF" },
+  { label:"FIFA Ranking / Elo",            pct: 2, cat:"context", color:"#8E9BAF" },
+  { label:"Prestige / Host Advantage",     pct: 2, cat:"context", color:"#8E9BAF" },
+  { label:"Pure Luck",                     pct: 5, cat:"luck",    color:"#9b59b6" },
 ];
 
-// ─────────────────────────────────────────────
-//  TOP 100 PLAYERS (Fox Sports / multi-source composite ranking)
-//  All WC stats start at 0 — updated as tournament progresses
-// ─────────────────────────────────────────────
-const mk = (rank,name,nation,natId,pos,club) => ({
-  rank, name, nation, natId, pos, club,
-  goals:0, assists:0, apps:0, cleanSheets:0,
-  interceptions:0, saves:0, penaltySaves:0,
-  yellowCards:0, redCards:0, foulsCommitted:0, foulsDrawn:0,
-  rating:0, mins:0
+const mk=(rank,name,nation,natId,pos,club)=>({
+  rank,name,nation,natId,pos,club,
+  goals:0,assists:0,apps:0,cleanSheets:0,
+  interceptions:0,saves:0,penaltySaves:0,
+  yellowCards:0,redCards:0,foulsCommitted:0,foulsDrawn:0,
+  rating:0,mins:0
 });
 
-const INITIAL_PLAYERS = [
+export const INITIAL_PLAYERS = [
   mk(1,"Kylian Mbappé","🇫🇷","FRA","FWD","Real Madrid"),
   mk(2,"Lionel Messi","🇦🇷","ARG","MID","Inter Miami"),
   mk(3,"Lamine Yamal","🇪🇸","ESP","FWD","Barcelona"),
@@ -287,407 +227,27 @@ const INITIAL_PLAYERS = [
   mk(75,"Jørgen Strand Larsen","🇳🇴","NOR","FWD","Wolves"),
   mk(76,"Antonio Nusa","🇳🇴","NOR","FWD","Club Brugge"),
   mk(77,"Alisson Becker","🇧🇷","BRA","GK","Liverpool"),
-  mk(78,"Jordi Alba","🇪🇸","ESP","DEF","Retired/NT"),
-  mk(79,"Youri Tielemans","🇧🇪","BEL","MID","Aston Villa"),
-  mk(80,"Jeremy Doku","🇧🇪","BEL","FWD","Man City"),
-  mk(81,"Romelu Lukaku","🇧🇪","BEL","FWD","Napoli"),
-  mk(82,"Takefusa Kubo","🇯🇵","JPN","MID","Real Sociedad"),
-  mk(83,"Daichi Kamada","🇯🇵","JPN","MID","Crystal Palace"),
-  mk(84,"Bilal Khannouss","🇲🇦","MAR","MID","Genk"),
-  mk(85,"Ismail Saibari","🇲🇦","MAR","MID","PSV"),
-  mk(86,"Moises Caicedo","🇪🇨","ECU","MID","Chelsea"),
-  mk(87,"Luis Díaz","🇨🇴","COL","FWD","Bayern Munich"),
-  mk(88,"James Rodríguez","🇨🇴","COL","MID","Rayo Vallecano"),
-  mk(89,"Darwin Núñez","🇺🇾","URU","FWD","Liverpool"),
-  mk(90,"Rodrigo Bentancur","🇺🇾","URU","MID","Tottenham"),
-  mk(91,"Nicolás Jackson","🇸🇳","SEN","FWD","Chelsea"),
-  mk(92,"Alphonso Davies","🇨🇦","CAN","DEF","Bayern Munich"),
-  mk(93,"Habib Diarra","🇸🇳","SEN","MID","Strasbourg"),
-  mk(94,"Takumi Ueda","🇯🇵","JPN","FWD","Feyenoord"),
-  mk(95,"Joshua Kimmich","🇩🇪","GER","MID","Bayern Munich"),
-  mk(96,"Lennart Karl","🇩🇪","GER","FWD","Bayern Munich"),
-  mk(97,"Deniz Undav","🇩🇪","GER","FWD","Stuttgart"),
-  mk(98,"Folarin Balogun","🇺🇸","USA","FWD","Monaco"),
-  mk(99,"Santi Giménez","🇲🇽","MEX","FWD","AC Milan"),
-  mk(100,"Aurélien Tchouaméni","🇫🇷","FRA","MID","Real Madrid"),
+  mk(78,"Youri Tielemans","🇧🇪","BEL","MID","Aston Villa"),
+  mk(79,"Jeremy Doku","🇧🇪","BEL","FWD","Man City"),
+  mk(80,"Romelu Lukaku","🇧🇪","BEL","FWD","Napoli"),
+  mk(81,"Takefusa Kubo","🇯🇵","JPN","MID","Real Sociedad"),
+  mk(82,"Daichi Kamada","🇯🇵","JPN","MID","Crystal Palace"),
+  mk(83,"Bilal Khannouss","🇲🇦","MAR","MID","Genk"),
+  mk(84,"Ismail Saibari","🇲🇦","MAR","MID","PSV"),
+  mk(85,"Moises Caicedo","🇪🇨","ECU","MID","Chelsea"),
+  mk(86,"Luis Díaz","🇨🇴","COL","FWD","Bayern Munich"),
+  mk(87,"James Rodríguez","🇨🇴","COL","MID","Rayo Vallecano"),
+  mk(88,"Darwin Núñez","🇺🇾","URU","FWD","Liverpool"),
+  mk(89,"Rodrigo Bentancur","🇺🇾","URU","MID","Tottenham"),
+  mk(90,"Nicolás Jackson","🇸🇳","SEN","FWD","Chelsea"),
+  mk(91,"Alphonso Davies","🇨🇦","CAN","DEF","Bayern Munich"),
+  mk(92,"Habib Diarra","🇸🇳","SEN","MID","Strasbourg"),
+  mk(93,"Takumi Ueda","🇯🇵","JPN","FWD","Feyenoord"),
+  mk(94,"Joshua Kimmich","🇩🇪","GER","MID","Bayern Munich"),
+  mk(95,"Lennart Karl","🇩🇪","GER","FWD","Bayern Munich"),
+  mk(96,"Deniz Undav","🇩🇪","GER","FWD","Stuttgart"),
+  mk(97,"Folarin Balogun","🇺🇸","USA","FWD","Monaco"),
+  mk(98,"Santi Giménez","🇲🇽","MEX","FWD","AC Milan"),
+  mk(99,"Aurélien Tchouaméni","🇫🇷","FRA","MID","Real Madrid"),
+  mk(100,"Achraf Dari","🇲🇦","MAR","DEF","Bournemouth"),
 ];
-
-// ─────────────────────────────────────────────
-//  FACTOR WEIGHTS
-// ─────────────────────────────────────────────
-const FACTOR_WEIGHTS = [
-  { label:"Recent Team Form",             pct:16, cat:"team",    color:"#2ecc71" },
-  { label:"Big-Game Record",              pct:14, cat:"team",    color:"#2ecc71" },
-  { label:"Roster Continuity & Chemistry",pct:13, cat:"team",    color:"#2ecc71" },
-  { label:"Possession / xG / Tactical",   pct:11, cat:"team",    color:"#2ecc71" },
-  { label:"Key Injuries & Squad Depth",   pct:10, cat:"team",    color:"#2ecc71" },
-  { label:"Age Balance & Maturity",       pct: 8, cat:"team",    color:"#2ecc71" },
-  { label:"Manager Profile (CIS)",        pct:11, cat:"manager", color:"#8bb8f0" },
-  { label:"Individual Player Form (IPFI)",pct: 6, cat:"player",  color:"#C9A84C" },
-  { label:"Top-5 League Representation",  pct: 2, cat:"context", color:"#8E9BAF" },
-  { label:"FIFA Ranking / Elo",           pct: 2, cat:"context", color:"#8E9BAF" },
-  { label:"Prestige / Host Advantage",    pct: 2, cat:"context", color:"#8E9BAF" },
-  { label:"Pure Luck",                    pct: 5, cat:"luck",    color:"#9b59b6" },
-];
-
-const buildSystemPrompt = (teams, updates) => `You are the analytical engine for a FIFA World Cup 2026 prediction tracker. Recalculate championship win probabilities for all teams.
-METHODOLOGY WEIGHTS (total=100%): Team Factors (72%): Form 16%, Big-Game 14%, Chemistry 13%, xG/Tactical 11%, Injuries 10%, Age 8%. Manager (11%). IPFI (6%). Contextual (6%). Pure Luck (5%).
-CURRENT PROBABILITIES: ${teams.map(t=>`${t.name}: ${t.prob}%`).join(", ")}
-UPDATES: ${updates.length>0?updates.map(u=>`[${u.date}] ${u.type}: ${u.text}`).join(" | "):"Baseline"}
-Respond ONLY with valid JSON: {"teams":[{"id":"FRA","prob":18.5,"change":0.5,"reasoning":"brief"},...all 18],"summary":"2-3 sentences","biggestMover":"team + why"}. Probabilities sum to ~100%.`;
-
-// ─────────────────────────────────────────────
-//  SHARED
-// ─────────────────────────────────────────────
-const tabs = ["Leaderboard","Groups","Bracket","Players","Updates","Weights"];
-const probColor = p => p>=14?"#C9A84C":p>=8?"#8bb8f0":p>=4?"#2ecc71":"#8E9BAF";
-function ChangeIndicator({change}){
-  if(!change||Math.abs(change)<0.05) return <span style={{color:"#444",fontSize:11,fontFamily:"monospace"}}>—</span>;
-  const up=change>0;
-  return <span style={{fontFamily:"monospace",fontSize:12,fontWeight:700,color:up?"#2ecc71":"#e74c3c"}}>{up?"▲":"▼"} {Math.abs(change).toFixed(1)}%</span>;
-}
-
-// ─────────────────────────────────────────────
-//  LEADERBOARD TAB
-// ─────────────────────────────────────────────
-function LeaderboardTab({teams}){
-  const [expanded,setExpanded]=useState(null);
-  const sorted=[...teams].sort((a,b)=>b.prob-a.prob);
-  const max=sorted[0]?.prob||1;
-  return(
-    <div>
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.25em",color:"#C9A84C",textTransform:"uppercase",marginBottom:6}}>Live Championship Probability Leaderboard</div>
-        <div style={{fontSize:13,color:"#8E9BAF",maxWidth:600}}>Click any team to expand strengths, weaknesses, and probability rationale.</div>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {sorted.map((team,i)=>{
-          const barW=(team.prob/max)*100;
-          const col=probColor(team.prob);
-          const open=expanded===team.id;
-          return(
-            <div key={team.id} style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${open?"rgba(201,168,76,0.4)":"rgba(255,255,255,0.07)"}`,borderRadius:4,overflow:"hidden",cursor:"pointer"}}
-              onClick={()=>setExpanded(open?null:team.id)}>
-              <div style={{display:"grid",gridTemplateColumns:"32px 36px 1fr 80px 60px 60px 24px",alignItems:"center",gap:10,padding:"11px 16px"}}>
-                <div style={{fontFamily:"monospace",fontSize:13,color:"#8E9BAF",textAlign:"center"}}>#{i+1}</div>
-                <Flag id={team.id} size={28} style={{borderRadius:3}} />
-                <div>
-                  <div style={{fontWeight:700,fontSize:15,color:"#F5F0E8",marginBottom:3}}>{team.name}</div>
-                  <div style={{position:"relative",height:4,background:"rgba(255,255,255,0.08)",borderRadius:3,overflow:"hidden"}}>
-                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:`${barW}%`,background:`linear-gradient(90deg,${col},${col}88)`,borderRadius:3,transition:"width 0.8s"}}/>
-                  </div>
-                </div>
-                <div style={{textAlign:"right"}}><span style={{fontFamily:"monospace",fontSize:18,fontWeight:700,color:col}}>{team.prob.toFixed(1)}%</span></div>
-                <div style={{textAlign:"center"}}><ChangeIndicator change={team.change}/></div>
-                <div style={{textAlign:"right",fontSize:11,color:"#8E9BAF",fontFamily:"monospace"}}>Grp {team.group}</div>
-                <div style={{color:"#8E9BAF",fontSize:12,textAlign:"center"}}>{open?"▲":"▼"}</div>
-              </div>
-              {open&&(
-                <div style={{borderTop:"1px solid rgba(255,255,255,0.07)",padding:"16px",background:"rgba(0,0,0,0.2)"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:14}}>
-                    <div><div style={{fontSize:10,fontFamily:"monospace",letterSpacing:"0.15em",color:"#2ecc71",marginBottom:6}}>STRENGTHS</div><div style={{fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.6}}>{team.strengths}</div></div>
-                    <div><div style={{fontSize:10,fontFamily:"monospace",letterSpacing:"0.15em",color:"#e74c3c",marginBottom:6}}>WEAKNESSES</div><div style={{fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.6}}>{team.weaknesses}</div></div>
-                  </div>
-                  <div style={{padding:"10px 14px",background:"rgba(201,168,76,0.07)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:4}}>
-                    <div style={{fontSize:10,fontFamily:"monospace",letterSpacing:"0.15em",color:"#C9A84C",marginBottom:5}}>PROBABILITY RATIONALE</div>
-                    <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.6}}>{team.rationale}</div>
-                  </div>
-                  <div style={{display:"flex",gap:24,marginTop:12,flexWrap:"wrap"}}>
-                    {[["Manager",team.manager],["CIS",`${team.cis}/10`],["Chemistry",`${team.chemistry}/10`],["Form",`${team.form}/10`]].map(([l,v])=>(
-                      <div key={l}><span style={{fontSize:11,color:"#8E9BAF",fontFamily:"monospace"}}>{l}: </span><span style={{fontSize:13,color:"#F5F0E8",fontWeight:600}}>{v}</span></div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-//  GROUPS TAB
-// ─────────────────────────────────────────────
-function GroupsTab({groups}){
-  return(
-    <div>
-      <div style={{marginBottom:20,fontSize:11,fontFamily:"monospace",letterSpacing:"0.25em",color:"#C9A84C",textTransform:"uppercase"}}>Group Stage Tables</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:16}}>
-        {Object.values(groups).map(group=>{
-          const sorted=[...group.teams].sort((a,b)=>b.pts!==a.pts?b.pts-a.pts:(b.gf-b.ga)-(a.gf-a.ga));
-          return(
-            <div key={group.name} style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(201,168,76,0.25)",borderRadius:6,overflow:"hidden"}}>
-              <div style={{background:"rgba(201,168,76,0.1)",borderBottom:"1px solid rgba(201,168,76,0.2)",padding:"8px 14px"}}>
-                <span style={{fontFamily:"Impact,sans-serif",fontSize:26,color:"#C9A84C",lineHeight:1}}>GROUP {group.name}</span>
-              </div>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-                <thead><tr style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{["Team","W","D","L","GD","Pts"].map(h=><th key={h} style={{padding:"6px 8px",fontFamily:"monospace",fontSize:10,letterSpacing:"0.1em",color:"#C9A84C88",textAlign:h==="Team"?"left":"center",fontWeight:400}}>{h}</th>)}</tr></thead>
-                <tbody>
-                  {sorted.map((t,i)=>(
-                    <tr key={t.id} style={{borderBottom:"1px solid rgba(255,255,255,0.04)",background:i===0?"rgba(26,94,58,0.15)":i===1?"rgba(26,58,107,0.12)":"transparent"}}>
-                      <td style={{padding:"9px 8px"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{width:18,height:18,borderRadius:"50%",background:i===0?"#C9A84C":i===1?"#1A3A6B":"rgba(255,255,255,0.1)",color:i===0?"#0A0A0F":"#fff",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</span>
-                          <span style={{fontSize:16,flexShrink:0}}>{t.flag}</span>
-                          <span style={{color:"#F5F0E8",fontWeight:i<2?600:400}}>{t.name}</span>
-                        </div>
-                      </td>
-                      {[t.w,t.d,t.l,t.gf-t.ga,t.pts].map((v,vi)=>(
-                        <td key={vi} style={{textAlign:"center",padding:"9px 8px",color:vi===4?"#C9A84C":vi===3?(v>0?"#2ecc71":v<0?"#e74c3c":"#F5F0E8"):"#F5F0E8",fontFamily:vi===4?"monospace":"inherit",fontWeight:vi===4?700:400}}>
-                          {vi===3&&v>0?`+${v}`:v}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-//  BRACKET TAB — visual bracket diagram
-// ─────────────────────────────────────────────
-function BracketMatchup({match, compact=false}){
-  const [open,setOpen]=useState(false);
-  const aw = match.winner===match.a.name;
-  const bw = match.winner===match.b.name;
-  return(
-    <div style={{background:"#14141C",border:`1px solid ${open?"rgba(201,168,76,0.5)":"rgba(255,255,255,0.1)"}`,borderRadius:4,overflow:"hidden",cursor:"pointer",minWidth:compact?160:200}}
-      onClick={()=>setOpen(!open)}>
-      {[match.a,match.b].map((team,ti)=>{
-        const isWinner = match.winner===team.name;
-        const isLoser = match.winner && !isWinner;
-        return(
-          <div key={ti} style={{
-            display:"flex",alignItems:"center",gap:6,padding:"7px 10px",
-            background:isWinner?"rgba(201,168,76,0.12)":"transparent",
-            borderBottom:ti===0?"1px solid rgba(255,255,255,0.08)":"none"
-          }}>
-            <Flag id={team.id} size={16} style={{borderRadius:2,opacity:isLoser?0.4:1}} />
-            <span style={{flex:1,fontSize:12,fontWeight:isWinner?700:400,color:isWinner?"#E8C97A":isLoser?"rgba(255,255,255,0.3)":"#F5F0E8",textDecoration:isLoser?"line-through":"none",textDecorationColor:"rgba(255,255,255,0.2)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{team.name}</span>
-            <span style={{fontFamily:"monospace",fontSize:11,color:isWinner?"#C9A84C":"rgba(255,255,255,0.25)",flexShrink:0}}>{team.prob}%</span>
-          </div>
-        );
-      })}
-      {open&&match.rat&&(
-        <div style={{padding:"10px",background:"rgba(0,0,0,0.3)",borderTop:"1px solid rgba(255,255,255,0.06)"}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-            <div><div style={{fontSize:9,fontFamily:"monospace",color:"#2ecc71",marginBottom:3,letterSpacing:"0.1em"}}>{match.a.name.toUpperCase()}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.6)",lineHeight:1.4}}>{match.aS}</div></div>
-            <div><div style={{fontSize:9,fontFamily:"monospace",color:"#e74c3c",marginBottom:3,letterSpacing:"0.1em"}}>{match.b.name.toUpperCase()}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.6)",lineHeight:1.4}}>{match.bS}</div></div>
-          </div>
-          <div style={{padding:"7px 10px",background:"rgba(201,168,76,0.07)",borderRadius:3,fontSize:11,color:"rgba(255,255,255,0.7)",lineHeight:1.5}}><span style={{color:"#C9A84C",fontFamily:"monospace",fontSize:9,letterSpacing:"0.1em"}}>VERDICT: </span>{match.rat}</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function BracketConnector({count}){
-  return(
-    <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around",alignItems:"center",gap:0}}>
-      {Array.from({length:Math.ceil(count/2)}).map((_,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",height:`${100/Math.ceil(count/2)}%`}}>
-          <div style={{width:20,height:2,background:"rgba(201,168,76,0.3)"}}/>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function BracketTab({bracket}){
-  const rounds = bracket;
-  return(
-    <div>
-      <div style={{marginBottom:16,fontSize:11,fontFamily:"monospace",letterSpacing:"0.25em",color:"#C9A84C",textTransform:"uppercase"}}>Knockout Bracket — Click Any Matchup to Expand Analysis</div>
-      <div style={{padding:"10px 14px",background:"rgba(201,168,76,0.05)",border:"1px solid rgba(201,168,76,0.15)",borderRadius:4,marginBottom:24,fontSize:12,color:"#8E9BAF",fontStyle:"italic"}}>
-        Visual bracket structure below. Each card shows both teams, win probabilities, and predicted winner in gold. Click to expand strengths &amp; rationale.
-      </div>
-
-      {/* VISUAL BRACKET — scrollable horizontally */}
-      <div style={{overflowX:"auto",paddingBottom:16}}>
-        <div style={{display:"flex",gap:0,alignItems:"flex-start",minWidth:"max-content"}}>
-          {rounds.map((round,ri)=>{
-            const isLast = ri===rounds.length-1;
-            const matchCount = round.matches.length;
-            const spacing = Math.pow(2,ri);
-            return(
-              <div key={ri} style={{display:"flex",flexDirection:"row",alignItems:"center"}}>
-                {/* Round column */}
-                <div style={{display:"flex",flexDirection:"column"}}>
-                  {/* Round label */}
-                  <div style={{
-                    fontFamily:"monospace",fontSize:9,letterSpacing:"0.2em",color:"#C9A84C",
-                    textTransform:"uppercase",textAlign:"center",padding:"6px 12px",
-                    borderBottom:"1px solid rgba(201,168,76,0.2)",marginBottom:8,
-                    background:"rgba(201,168,76,0.06)",borderRadius:"4px 4px 0 0",
-                    minWidth: isLast?240:200,
-                    whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"
-                  }}>
-                    {round.round.replace(" — July 19, MetLife","")}
-                  </div>
-                  {/* Matches */}
-                  <div style={{
-                    display:"flex",flexDirection:"column",
-                    gap: spacing*8,
-                    paddingTop: ri===0?0 : spacing*4,
-                    paddingBottom: ri===0?0 : spacing*4,
-                  }}>
-                    {round.matches.map((match,mi)=>(
-                      <BracketMatchup key={mi} match={match} compact={ri>2}/>
-                    ))}
-                  </div>
-                </div>
-                {/* Connector lines between rounds */}
-                {ri<rounds.length-1&&(
-                  <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around",width:24,alignSelf:"stretch",marginTop:36}}>
-                    {round.matches.map((_,mi)=>(
-                      <div key={mi} style={{display:"flex",alignItems:"center",flex:1}}>
-                        <div style={{width:"100%",height:2,background:"rgba(201,168,76,0.2)"}}/>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* LIST VIEW — all matchups with full detail */}
-      <div style={{marginTop:32}}>
-        <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.2em",color:"#8E9BAF",textTransform:"uppercase",marginBottom:16,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>All Matchup Details</div>
-        {rounds.map((round,ri)=>(
-          <div key={ri} style={{marginBottom:28}}>
-            <div style={{fontFamily:"monospace",fontSize:10,letterSpacing:"0.25em",color:"#C9A84C",textTransform:"uppercase",marginBottom:10,paddingBottom:6,borderBottom:"1px solid rgba(201,168,76,0.15)"}}>{round.round}</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:8}}>
-              {round.matches.map((match,mi)=>(
-                <BracketMatchup key={mi} match={match}/>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-//  PLAYERS TAB
-// ─────────────────────────────────────────────
-const POS_COLORS = { FWD:"#e74c3c", MID:"#2ecc71", DEF:"#8bb8f0", GK:"#C9A84C" };
-
-function calcFantasyScore(p){
-  if(p.apps===0) return 0;
-  let s = (p.goals*6)+(p.assists*4)+(p.apps*1)+(p.cleanSheets*3)
-    +(p.interceptions*0.6)+(p.foulsDrawn*0.3)-(p.foulsCommitted*0.25)
-    -(p.yellowCards*0.5)-(p.redCards*3);
-  if(p.pos==="GK") s += (p.saves*0.5)+(p.penaltySaves*3)+(p.cleanSheets*2);
-  if(p.pos==="DEF") s += (p.cleanSheets*1.5);
-  return Math.max(0,parseFloat(s.toFixed(1)));
-}
-
-const SORT_OPTIONS = [
-  {key:"rank",    label:"Pre-Tournament Rank"},
-  {key:"fantasy", label:"Fantasy Score (Overall Rating)"},
-  {key:"goals",   label:"Goals"},
-  {key:"assists", label:"Assists"},
-  {key:"cleanSheets", label:"Clean Sheets"},
-  {key:"interceptions", label:"Interceptions"},
-  {key:"saves",   label:"Saves (GK)"},
-];
-
-function PlayersTab({players}){
-  const [filterPos,setFilterPos]=useState("ALL");
-  const [sortKey,setSortKey]=useState("rank");
-
-  const withScores = players.map(p=>({...p, fantasy:calcFantasyScore(p)}));
-  const filtered = filterPos==="ALL"?withScores:withScores.filter(p=>p.pos===filterPos);
-  const sorted = [...filtered].sort((a,b)=>
-    sortKey==="rank" ? a.rank-b.rank : (b[sortKey]??0)-(a[sortKey]??0)
-  );
-
-  return(
-    <div>
-      {/* HEADER */}
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.25em",color:"#C9A84C",textTransform:"uppercase",marginBottom:8}}>Top 100 World Cup 2026 Players</div>
-        <div style={{padding:"12px 16px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:4,fontSize:13,color:"#8E9BAF",lineHeight:1.6,maxWidth:760}}>
-          This leaderboard displays the <strong style={{color:"#F5F0E8"}}>top 100 players competing at the 2026 World Cup</strong>, ranked by their in-tournament statistics as the competition progresses. Pre-tournament order is based on the Fox Sports expert ranking. As matches are played and stats accumulate, the leaderboard re-ranks automatically by Fantasy Score. <em>All statistics currently show zero — the tournament begins June 11.</em>
-        </div>
-      </div>
-
-      {/* FILTERS */}
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16,alignItems:"center"}}>
-        {["ALL","FWD","MID","DEF","GK"].map(pos=>(
-          <button key={pos} onClick={()=>setFilterPos(pos)} style={{
-            background:filterPos===pos?(POS_COLORS[pos]||"#C9A84C"):"rgba(255,255,255,0.05)",
-            color:filterPos===pos?"#0A0A0F":"#8E9BAF",
-            border:`1px solid ${filterPos===pos?(POS_COLORS[pos]||"#C9A84C"):"rgba(255,255,255,0.1)"}`,
-            borderRadius:3,padding:"5px 12px",fontSize:11,fontFamily:"monospace",letterSpacing:"0.1em",cursor:"pointer",fontWeight:600
-          }}>{pos}</button>
-        ))}
-        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:11,fontFamily:"monospace",color:"#8E9BAF"}}>SORT BY</span>
-          <select value={sortKey} onChange={e=>setSortKey(e.target.value)} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:3,padding:"5px 10px",color:"#F5F0E8",fontSize:12,fontFamily:"monospace"}}>
-            {SORT_OPTIONS.map(o=><option key={o.key} value={o.key}>{o.label}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* TABLE */}
-      <div style={{overflowX:"auto"}}>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:780}}>
-          <thead>
-            <tr style={{borderBottom:"2px solid rgba(201,168,76,0.3)"}}>
-              {[
-                {k:"rank",    l:"#"},
-                {k:"name",    l:"Player"},
-                {k:"fantasy", l:"Rating"},
-                {k:"goals",   l:"G",  title:"Goals"},
-                {k:"assists", l:"A",  title:"Assists"},
-                {k:"apps",    l:"Apps",title:"Appearances"},
-                {k:"cleanSheets",l:"CS",title:"Clean Sheets (DEF/GK)"},
-                {k:"interceptions",l:"Int",title:"Interceptions"},
-                {k:"saves",   l:"Sv", title:"Saves (GK only)"},
-                {k:"penaltySaves",l:"PSv",title:"Penalty Saves"},
-                {k:"yellowCards",l:"YC",title:"Yellow Cards"},
-                {k:"redCards",l:"RC", title:"Red Cards"},
-              ].map(col=>(
-                <th key={col.k} title={col.title||""} style={{
-                  padding:"8px 8px",fontFamily:"monospace",fontSize:10,letterSpacing:"0.1em",
-                  color:sortKey===col.k?"#F5F0E8":"#C9A84C",textAlign:col.k==="name"?"left":"center",
-                  fontWeight:sortKey===col.k?700:400,cursor:col.k==="name"?undefined:"pointer",whiteSpace:"nowrap"
-                }} onClick={()=>col.k!=="name"&&setSortKey(col.k)}>{col.l}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((p,i)=>(
-              <tr key={p.rank} style={{borderBottom:"1px solid rgba(255,255,255,0.04)",background:i<3?"rgba(201,168,76,0.04)":"transparent",transition:"background 0.15s"}}
-                onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}
-                onMouseLeave={e=>e.currentTarget.style.background=i<3?"rgba(201,168,76,0.04)":"transparent"}>
-                {/* Rank */}
-                <td style={{padding:"9px 8px",fontFamily:"monospace",fontSize:12,color:"#8E9BAF",textAlign:"center"}}>{p.rank}</td>
-                {/* Player name + flag + pos */}
-                <td style={{padding:"9px 8px"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <Flag id={p.natId} size={20} style={{borderRadius:2}}/>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:14,color:"#F5F0E8"}}>{p.name}</div>
-                      <div style={{display:"flex",gap:5,marginTop:2,alignItems:"center"}}>
-                        <span style={{fontSize:10,fontFamily:"monospace",padding:"1px 5px",borderRadius:2,background:POS_COLORS[p.pos]+"22",color:POS_COLORS[p.pos],border:`1px solid ${POS_COLORS[p.pos]}44`}}>{p.pos}</span>
-                        <span style={{fontSize:11,color:"#8E9BAF"}}>{p.club}</span>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                {/* Rating */}
-                <td style={{padding:"9px 8px",textAlign:"center"}}>
-                  <span style={{fontFamily:"monospace",fontSize:13,fontWeight:700,color:p.fantasy>0?"#9b59b6":"#444"}

@@ -1,19 +1,76 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Flag, INITIAL_TEAMS, INITIAL_PLAYERS, FACTOR_WEIGHTS, PREDICTED_KNOCKOUT, INITIAL_GROUPS } from "./data.jsx";
 
+// ── WC NATION IDS for API-Football (used by side panel & server) ─────────────
+// These are the API-Football team IDs for all 48 World Cup nations
+export const WC_TEAM_IDS = [
+  2,    // France
+  6,    // Brazil
+  9,    // Spain
+  10,   // Argentina
+  15,   // USA
+  18,   // Portugal
+  21,   // England
+  25,   // Germany
+  26,   // Netherlands
+  29,   // Morocco
+  31,   // Belgium
+  36,   // Japan
+  39,   // Mexico
+  41,   // Canada
+  44,   // Uruguay
+  48,   // Switzerland
+  50,   // Croatia
+  54,   // Colombia
+  55,   // South Korea
+  60,   // Norway
+  62,   // Turkey
+  63,   // Senegal
+  65,   // Australia
+  66,   // Ecuador
+  67,   // Ghana
+  68,   // Saudi Arabia
+  74,   // Austria
+  83,   // Algeria
+  84,   // Iraq
+  85,   // South Africa
+  86,   // Iran
+  91,   // Qatar
+  95,   // Panama
+  96,   // Cape Verde
+  98,   // Paraguay
+  101,  // New Zealand
+  102,  // Scotland
+  107,  // Bosnia-Herzegovina
+  112,  // Czechia
+  119,  // Curaçao
+  154,  // Haiti
+  163,  // Jordan
+  172,  // Tunisia
+  174,  // DR Congo
+  195,  // Ivory Coast
+  202,  // Egypt
+  265,  // Uzbekistan
+];
+
+// ── BACKEND URL ───────────────────────────────────────────────────────────────
+// Replace this with your actual Render URL once deployed
+const BACKEND_URL = "https://wc2026-fetcher.onrender.com";
+
+// ── SHARED ────────────────────────────────────────────────────────────────────
 const probColor = p => p>=14?"#C9A84C":p>=8?"#8bb8f0":p>=4?"#2ecc71":"#8E9BAF";
 const POS_COLORS = { FWD:"#e74c3c", MID:"#2ecc71", DEF:"#8bb8f0", GK:"#C9A84C" };
 const tabs = ["Leaderboard","Groups","Bracket","Players","Updates","Weights"];
 const UPDATE_TYPES = ["result","injury","fitness","suspension","tactical","news"];
 const UPDATE_COLORS = { result:"#2ecc71", injury:"#e74c3c", fitness:"#f39c12", suspension:"#e67e22", tactical:"#8bb8f0", news:"#8E9BAF" };
 const SORT_OPTIONS = [
-  {key:"rank", label:"Pre-Tournament Rank"},
+  {key:"rank",    label:"Pre-Tournament Rank"},
   {key:"fantasy", label:"Fantasy Score (Overall Rating)"},
-  {key:"goals", label:"Goals"},
+  {key:"goals",   label:"Goals"},
   {key:"assists", label:"Assists"},
   {key:"cleanSheets", label:"Clean Sheets"},
   {key:"interceptions", label:"Interceptions"},
-  {key:"saves", label:"Saves (GK)"},
+  {key:"saves",   label:"Saves (GK)"},
 ];
 
 function ChangeIndicator({change}){
@@ -37,6 +94,230 @@ METHODOLOGY WEIGHTS (total=100%): Team Factors (72%): Form 16%, Big-Game 14%, Ch
 CURRENT PROBABILITIES: ${teams.map(t=>`${t.name}: ${t.prob}%`).join(", ")}
 UPDATES: ${updates.length>0?updates.map(u=>`[${u.date}] ${u.type}: ${u.text}`).join(" | "):"Baseline"}
 Respond ONLY with valid JSON: {"teams":[{"id":"FRA","prob":18.5,"change":0.5,"reasoning":"brief"},...all 18],"summary":"2-3 sentences","biggestMover":"team + why"}. Probabilities sum to ~100%.`;
+
+// ── SIDE PANEL — LIVE MATCH FEED ─────────────────────────────────────────────
+const STATUS_COLORS = {
+  "FT":       "#2ecc71",
+  "NS":       "#8E9BAF",
+  "1H":       "#e74c3c",
+  "2H":       "#e74c3c",
+  "HT":       "#f39c12",
+  "ET":       "#e74c3c",
+  "P":        "#9b59b6",
+  "AET":      "#2ecc71",
+  "PEN":      "#2ecc71",
+  "CANC":     "#e74c3c",
+  "PST":      "#e74c3c",
+};
+
+function MatchCard({match}){
+  const [expanded, setExpanded] = useState(false);
+  const status = match.fixture?.status?.short || "NS";
+  const elapsed = match.fixture?.status?.elapsed;
+  const home = match.teams?.home;
+  const away = match.teams?.away;
+  const hGoals = match.goals?.home ?? "—";
+  const aGoals = match.goals?.away ?? "—";
+  const isLive = ["1H","2H","HT","ET","P"].includes(status);
+  const isFinished = ["FT","AET","PEN"].includes(status);
+  const isUpcoming = status === "NS";
+
+  // group events by type
+  const goals = (match.events||[]).filter(e=>e.type==="Goal");
+  const cards = (match.events||[]).filter(e=>e.type==="Card");
+
+  const dateStr = match.fixture?.date
+    ? new Date(match.fixture.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})
+    : "";
+
+  const statusLabel = isLive ? `${elapsed}'` : status;
+
+  return(
+    <div style={{
+      background:"rgba(255,255,255,0.03)",
+      border:`1px solid ${isLive?"rgba(231,76,60,0.4)":isFinished?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.05)"}`,
+      borderRadius:4,
+      marginBottom:6,
+      overflow:"hidden",
+      cursor:"pointer",
+      boxShadow: isLive?"0 0 8px rgba(231,76,60,0.15)":"none"
+    }} onClick={()=>setExpanded(!expanded)}>
+      {/* Match header */}
+      <div style={{padding:"8px 10px"}}>
+        {/* Date + status + competition */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <span style={{fontSize:10,fontFamily:"monospace",color:"#8E9BAF"}}>{dateStr}</span>
+          <div style={{display:"flex",alignItems:"center",gap:5}}>
+            {isLive&&<span style={{width:6,height:6,borderRadius:"50%",background:"#e74c3c",display:"inline-block",animation:"pulse 1.5s infinite"}}/>}
+            <span style={{
+              fontSize:10,fontFamily:"monospace",fontWeight:700,
+              color: STATUS_COLORS[status]||"#8E9BAF",
+              background:`${STATUS_COLORS[status]||"#8E9BAF"}18`,
+              padding:"1px 6px",borderRadius:2
+            }}>{statusLabel}</span>
+          </div>
+        </div>
+        {/* Score row */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 36px 1fr",alignItems:"center",gap:4}}>
+          {/* Home */}
+          <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
+            <span style={{fontSize:12,fontWeight:home?.winner?700:400,color:home?.winner?"#F5F0E8":"rgba(255,255,255,0.7)",textAlign:"right"}}>{home?.name||"TBD"}</span>
+            {home?.logo&&<img src={home.logo} alt="" style={{width:16,height:16,objectFit:"contain",flexShrink:0}}/>}
+          </div>
+          {/* Score */}
+          <div style={{textAlign:"center",fontFamily:"monospace",fontSize:14,fontWeight:700,color:isUpcoming?"#8E9BAF":"#F5F0E8"}}>
+            {isUpcoming ? (match.fixture?.date ? new Date(match.fixture.date).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}) : "—") : `${hGoals}–${aGoals}`}
+          </div>
+          {/* Away */}
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            {away?.logo&&<img src={away.logo} alt="" style={{width:16,height:16,objectFit:"contain",flexShrink:0}}/>}
+            <span style={{fontSize:12,fontWeight:away?.winner?700:400,color:away?.winner?"#F5F0E8":"rgba(255,255,255,0.7)"}}>{away?.name||"TBD"}</span>
+          </div>
+        </div>
+        {/* Competition name */}
+        {match.league?.name&&(
+          <div style={{textAlign:"center",fontSize:10,color:"#8E9BAF",marginTop:4,fontStyle:"italic"}}>{match.league.name}</div>
+        )}
+      </div>
+
+      {/* Expanded detail */}
+      {expanded&&(goals.length>0||cards.length>0)&&(
+        <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"8px 10px",background:"rgba(0,0,0,0.2)"}}>
+          {goals.length>0&&(
+            <div style={{marginBottom:cards.length>0?8:0}}>
+              {goals.map((e,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"rgba(255,255,255,0.7)",marginBottom:3}}>
+                  <span style={{color:"#2ecc71",fontSize:13}}>⚽</span>
+                  <span style={{fontFamily:"monospace",color:"#8E9BAF",flexShrink:0}}>{e.time?.elapsed}'</span>
+                  <span style={{fontWeight:600,color:"#F5F0E8"}}>{e.player?.name}</span>
+                  {e.assist?.name&&<span style={{color:"#8E9BAF"}}>({e.assist.name})</span>}
+                  <span style={{marginLeft:"auto",fontSize:10,color:"#8E9BAF"}}>{e.team?.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {cards.length>0&&(
+            <div>
+              {cards.map((e,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"rgba(255,255,255,0.7)",marginBottom:3}}>
+                  <span style={{fontSize:12}}>{e.detail==="Red Card"||e.detail==="Second Yellow card"?"🟥":"🟨"}</span>
+                  <span style={{fontFamily:"monospace",color:"#8E9BAF",flexShrink:0}}>{e.time?.elapsed}'</span>
+                  <span style={{fontWeight:600,color:"#F5F0E8"}}>{e.player?.name}</span>
+                  <span style={{marginLeft:"auto",fontSize:10,color:"#8E9BAF"}}>{e.team?.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {!expanded&&(isFinished||isLive)&&(goals.length>0||cards.length>0)&&(
+        <div style={{textAlign:"center",padding:"2px",fontSize:10,color:"rgba(255,255,255,0.2)"}}>▼ goals & cards</div>
+      )}
+    </div>
+  );
+}
+
+function SidePanel({ matches, loading, error, onRefresh }){
+  const [filterDate, setFilterDate] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const scrollRef = useRef(null);
+
+  const filtered = matches.filter(m=>{
+    const dateOk = !filterDate || (m.fixture?.date||"").startsWith(filterDate);
+    const statusOk = filterStatus==="ALL" ||
+      (filterStatus==="LIVE" && ["1H","2H","HT","ET","P"].includes(m.fixture?.status?.short)) ||
+      (filterStatus==="FT"   && ["FT","AET","PEN"].includes(m.fixture?.status?.short)) ||
+      (filterStatus==="NS"   && m.fixture?.status?.short==="NS");
+    return dateOk && statusOk;
+  });
+
+  const liveCount = matches.filter(m=>["1H","2H","HT","ET","P"].includes(m.fixture?.status?.short)).length;
+
+  return(
+    <div style={{
+      width:280, flexShrink:0,
+      background:"#0D0D14",
+      borderLeft:"1px solid rgba(201,168,76,0.15)",
+      display:"flex", flexDirection:"column",
+      height:"100vh", position:"sticky", top:0,
+      overflow:"hidden"
+    }}>
+      {/* Panel header */}
+      <div style={{padding:"14px 12px 10px",borderBottom:"1px solid rgba(255,255,255,0.06)",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div>
+            <div style={{fontFamily:"monospace",fontSize:10,letterSpacing:"0.2em",color:"#C9A84C",textTransform:"uppercase"}}>Match Feed</div>
+            <div style={{fontSize:11,color:"#8E9BAF",marginTop:2}}>WC nations · May 16 onward</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            {liveCount>0&&(
+              <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(231,76,60,0.15)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:3,padding:"2px 7px"}}>
+                <span style={{width:6,height:6,borderRadius:"50%",background:"#e74c3c",display:"inline-block",animation:"pulse 1.5s infinite"}}/>
+                <span style={{fontFamily:"monospace",fontSize:10,color:"#e74c3c",fontWeight:700}}>{liveCount} LIVE</span>
+              </div>
+            )}
+            <button onClick={onRefresh} disabled={loading} style={{background:"rgba(201,168,76,0.1)",border:"1px solid rgba(201,168,76,0.3)",borderRadius:3,padding:"4px 8px",color:"#C9A84C",fontSize:12,cursor:loading?"not-allowed":"pointer",opacity:loading?0.5:1}}>
+              {loading?"⟳":"⟳"}
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{display:"flex",gap:5,marginBottom:6}}>
+          {["ALL","LIVE","FT","NS"].map(s=>(
+            <button key={s} onClick={()=>setFilterStatus(s)} style={{
+              flex:1,background:filterStatus===s?"rgba(201,168,76,0.2)":"rgba(255,255,255,0.04)",
+              border:`1px solid ${filterStatus===s?"rgba(201,168,76,0.5)":"rgba(255,255,255,0.08)"}`,
+              borderRadius:3,padding:"3px 0",fontSize:10,fontFamily:"monospace",
+              color:filterStatus===s?"#C9A84C":"#8E9BAF",cursor:"pointer",letterSpacing:"0.05em"
+            }}>{s}</button>
+          ))}
+        </div>
+
+        {/* Date filter */}
+        <input
+          type="date"
+          value={filterDate}
+          onChange={e=>setFilterDate(e.target.value)}
+          style={{
+            width:"100%",background:"rgba(255,255,255,0.04)",
+            border:"1px solid rgba(255,255,255,0.1)",borderRadius:3,
+            padding:"5px 8px",color:"#F5F0E8",fontSize:11,
+            fontFamily:"monospace",outline:"none",boxSizing:"border-box",
+            colorScheme:"dark"
+          }}
+          placeholder="Filter by date"
+        />
+      </div>
+
+      {/* Match list */}
+      <div ref={scrollRef} style={{flex:1,overflowY:"auto",padding:"8px 8px"}}>
+        {error&&(
+          <div style={{padding:"12px",background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:4,fontSize:12,color:"#e74c3c",marginBottom:8}}>
+            {error}
+          </div>
+        )}
+        {loading&&matches.length===0&&(
+          <div style={{textAlign:"center",padding:"30px 0",color:"#8E9BAF",fontSize:12}}>Loading matches…</div>
+        )}
+        {!loading&&filtered.length===0&&matches.length>0&&(
+          <div style={{textAlign:"center",padding:"30px 0",color:"#8E9BAF",fontSize:12,fontStyle:"italic"}}>No matches for this filter.</div>
+        )}
+        {!loading&&matches.length===0&&!error&&(
+          <div style={{textAlign:"center",padding:"30px 0",color:"#8E9BAF",fontSize:12,fontStyle:"italic"}}>
+            Connect the Render backend to load matches automatically, or add results via the Updates tab.
+          </div>
+        )}
+        {filtered.map((m,i)=><MatchCard key={m.fixture?.id||i} match={m}/>)}
+      </div>
+
+      {/* Footer count */}
+      <div style={{padding:"6px 10px",borderTop:"1px solid rgba(255,255,255,0.04)",flexShrink:0,fontSize:10,fontFamily:"monospace",color:"#8E9BAF",textAlign:"center"}}>
+        {filtered.length} match{filtered.length!==1?"es":""} shown
+      </div>
+    </div>
+  );
+}
 
 // ── LEADERBOARD ──────────────────────────────────────────────────────────────
 function LeaderboardTab({teams}){
@@ -172,9 +453,6 @@ function BracketTab({bracket}){
   return(
     <div>
       <div style={{marginBottom:16,fontSize:11,fontFamily:"monospace",letterSpacing:"0.25em",color:"#C9A84C",textTransform:"uppercase"}}>Knockout Bracket — Click Any Matchup to Expand Analysis</div>
-      <div style={{padding:"10px 14px",background:"rgba(201,168,76,0.05)",border:"1px solid rgba(201,168,76,0.15)",borderRadius:4,marginBottom:24,fontSize:12,color:"#8E9BAF",fontStyle:"italic"}}>
-        Scroll horizontally to see the full bracket. Click any card to expand strengths and rationale.
-      </div>
       <div style={{overflowX:"auto",paddingBottom:16}}>
         <div style={{display:"flex",gap:0,alignItems:"flex-start",minWidth:"max-content"}}>
           {bracket.map((round,ri)=>(
@@ -318,14 +596,6 @@ function UpdatesTab({updates,onAdd}){
           + Add to Feed
         </button>
       </div>
-      <div style={{background:"rgba(91,142,219,0.06)",border:"1px dashed rgba(91,142,219,0.35)",borderRadius:6,padding:16,marginBottom:28}}>
-        <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.2em",color:"#8bb8f0",marginBottom:8}}>⚡ API INTEGRATION HOOK</div>
-        <div style={{fontSize:13,color:"#8E9BAF",lineHeight:1.6}}>Connect API-Football or SportsData.io here for automatic match result updates.</div>
-        <div style={{marginTop:10,fontFamily:"monospace",fontSize:12,color:"rgba(91,142,219,0.7)",padding:"8px 12px",background:"rgba(0,0,0,0.3)",borderRadius:4}}>
-          {"// fetchMatchResults(matchId) → formatAsUpdate() → onAdd(update)"}<br/>
-          {"// Poll every 5 min during live matches, hourly otherwise"}
-        </div>
-      </div>
       {updates.length===0?(
         <div style={{textAlign:"center",padding:"40px 20px",color:"#8E9BAF",fontSize:14,fontStyle:"italic"}}>No updates logged yet.</div>
       ):(
@@ -389,7 +659,55 @@ export default function App(){
   const [lastRefresh,setLastRefresh]=useState(null);
   const [error,setError]=useState(null);
 
+  // ── SIDE PANEL STATE ────────────────────────────────────────────────────────
+  const [matches,setMatches]=useState([]);
+  const [matchesLoading,setMatchesLoading]=useState(false);
+  const [matchesError,setMatchesError]=useState(null);
+
   const addUpdate=useCallback(u=>setUpdates(p=>[...p,u]),[]);
+
+  // ── FETCH MATCHES FROM RENDER BACKEND ───────────────────────────────────────
+  const fetchMatches = useCallback(async()=>{
+    setMatchesLoading(true);
+    setMatchesError(null);
+    try{
+      const res = await fetch(`${BACKEND_URL}/matches`);
+      if(!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+      // Sort newest first
+      const sorted = (data||[]).sort((a,b)=>
+        new Date(b.fixture?.date||0) - new Date(a.fixture?.date||0)
+      );
+      setMatches(sorted);
+    }catch(e){
+      setMatchesError("Could not reach server. Check Render is running.");
+      console.error(e);
+    }
+    setMatchesLoading(false);
+  },[]);
+
+  // ── POLL FOR UPDATES ─────────────────────────────────────────────────────────
+  useEffect(()=>{
+    // Initial fetch
+    fetchMatches();
+
+    // Check for new match results every 5 minutes
+    const matchTimer = setInterval(fetchMatches, 5 * 60 * 1000);
+
+    // Auto-pull completed match results into Updates feed every 5 min
+    const updateTimer = setInterval(async()=>{
+      try{
+        const res = await fetch(`${BACKEND_URL}/updates`);
+        if(!res.ok) return;
+        const newUpdates = await res.json();
+        if(newUpdates.length > 0){
+          newUpdates.forEach(u => addUpdate(u));
+        }
+      }catch(e){ /* silent — server may be sleeping */ }
+    }, 5 * 60 * 1000);
+
+    return ()=>{ clearInterval(matchTimer); clearInterval(updateTimer); };
+  },[fetchMatches, addUpdate]);
 
   const runAnalysis=async()=>{
     setLoading(true);setError(null);
@@ -409,9 +727,11 @@ export default function App(){
   const top3=[...teams].sort((a,b)=>b.prob-a.prob).slice(0,3);
 
   return(
-    <div style={{minHeight:"100vh",background:"#0A0A0F",color:"#F5F0E8",fontFamily:"Georgia,serif",fontSize:16}}>
-      <div style={{background:"#14141C",borderBottom:"1px solid rgba(201,168,76,0.25)",padding:"20px 24px 0",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 24px rgba(0,0,0,0.4)"}}>
-        <div style={{maxWidth:1200,margin:"0 auto"}}>
+    <div style={{minHeight:"100vh",background:"#0A0A0F",color:"#F5F0E8",fontFamily:"Georgia,serif",fontSize:16,display:"flex",flexDirection:"column"}}>
+
+      {/* STICKY HEADER */}
+      <div style={{background:"#14141C",borderBottom:"1px solid rgba(201,168,76,0.25)",padding:"20px 24px 0",position:"sticky",top:0,zIndex:200,boxShadow:"0 4px 24px rgba(0,0,0,0.4)",flexShrink:0}}>
+        <div style={{maxWidth:"100%"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,marginBottom:16}}>
             <div>
               <div style={{fontFamily:"monospace",fontSize:10,letterSpacing:"0.3em",color:"#C9A84C",textTransform:"uppercase",marginBottom:4}}>Live Prediction Engine · FIFA Men's World Cup</div>
@@ -449,26 +769,53 @@ export default function App(){
           </div>
         </div>
       </div>
-      <div style={{background:"rgba(201,168,76,0.06)",borderBottom:"1px solid rgba(201,168,76,0.15)",padding:"10px 24px"}}>
-        <div style={{maxWidth:1200,margin:"0 auto",display:"flex",gap:12,alignItems:"flex-start"}}>
+
+      {/* AI SUMMARY BANNER */}
+      <div style={{background:"rgba(201,168,76,0.06)",borderBottom:"1px solid rgba(201,168,76,0.15)",padding:"10px 24px",flexShrink:0}}>
+        <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
           <span style={{fontFamily:"monospace",fontSize:10,letterSpacing:"0.1em",color:"#C9A84C",flexShrink:0,marginTop:3}}>AI ANALYSIS</span>
           <span style={{fontSize:14,color:"#8E9BAF",lineHeight:1.6}}>{aiSummary}</span>
         </div>
-        {biggestMover&&<div style={{maxWidth:1200,margin:"4px auto 0",display:"flex",gap:12}}><span style={{fontFamily:"monospace",fontSize:10,color:"#2ecc71",flexShrink:0}}>BIGGEST MOVER</span><span style={{fontSize:13,color:"#2ecc71"}}>{biggestMover}</span></div>}
-        {error&&<div style={{maxWidth:1200,margin:"4px auto 0",display:"flex",gap:12}}><span style={{fontFamily:"monospace",fontSize:10,color:"#e74c3c",flexShrink:0}}>ERROR</span><span style={{fontSize:13,color:"#e74c3c"}}>{error}</span></div>}
+        {biggestMover&&<div style={{marginTop:"4px",display:"flex",gap:12}}><span style={{fontFamily:"monospace",fontSize:10,color:"#2ecc71",flexShrink:0}}>BIGGEST MOVER</span><span style={{fontSize:13,color:"#2ecc71"}}>{biggestMover}</span></div>}
+        {error&&<div style={{marginTop:"4px",display:"flex",gap:12}}><span style={{fontFamily:"monospace",fontSize:10,color:"#e74c3c",flexShrink:0}}>ERROR</span><span style={{fontSize:13,color:"#e74c3c"}}>{error}</span></div>}
       </div>
-      <div style={{maxWidth:1200,margin:"0 auto",padding:"32px 24px"}}>
-        {activeTab==="Leaderboard"&&<LeaderboardTab teams={teams}/>}
-        {activeTab==="Groups"&&<GroupsTab groups={INITIAL_GROUPS}/>}
-        {activeTab==="Bracket"&&<BracketTab bracket={PREDICTED_KNOCKOUT}/>}
-        {activeTab==="Players"&&<PlayersTab players={players}/>}
-        {activeTab==="Updates"&&<UpdatesTab updates={updates} onAdd={addUpdate}/>}
-        {activeTab==="Weights"&&<WeightsTab/>}
+
+      {/* BODY — main content + side panel */}
+      <div style={{display:"flex",flex:1,overflow:"hidden",minHeight:0}}>
+
+        {/* MAIN SCROLLABLE CONTENT */}
+        <div style={{flex:1,overflowY:"auto",padding:"32px 24px"}}>
+          {activeTab==="Leaderboard"&&<LeaderboardTab teams={teams}/>}
+          {activeTab==="Groups"&&<GroupsTab groups={INITIAL_GROUPS}/>}
+          {activeTab==="Bracket"&&<BracketTab bracket={PREDICTED_KNOCKOUT}/>}
+          {activeTab==="Players"&&<PlayersTab players={players}/>}
+          {activeTab==="Updates"&&<UpdatesTab updates={updates} onAdd={addUpdate}/>}
+          {activeTab==="Weights"&&<WeightsTab/>}
+          <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"20px 0",textAlign:"center",fontFamily:"monospace",fontSize:11,color:"rgba(255,255,255,0.2)",letterSpacing:"0.1em",marginTop:40}}>
+            FIFA WORLD CUP 2026 · LIVE PREDICTION ENGINE · 16-FACTOR MODEL · POWERED BY CLAUDE
+          </div>
+        </div>
+
+        {/* SIDE PANEL — always visible */}
+        <SidePanel
+          matches={matches}
+          loading={matchesLoading}
+          error={matchesError}
+          onRefresh={fetchMatches}
+        />
       </div>
-      <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"20px 24px",textAlign:"center",fontFamily:"monospace",fontSize:11,color:"rgba(255,255,255,0.2)",letterSpacing:"0.1em"}}>
-        FIFA WORLD CUP 2026 · LIVE PREDICTION ENGINE · 16-FACTOR MODEL · POWERED BY CLAUDE
-      </div>
-      <style>{`*{box-sizing:border-box;}@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:#0A0A0F;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.3);border-radius:3px;}select option{background:#14141C;color:#F5F0E8;}textarea::placeholder,input::placeholder{color:rgba(255,255,255,0.25);}`}</style>
+
+      <style>{`
+        *{box-sizing:border-box;}
+        @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+        ::-webkit-scrollbar{width:5px;height:5px;}
+        ::-webkit-scrollbar-track{background:#0A0A0F;}
+        ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.3);border-radius:3px;}
+        select option{background:#14141C;color:#F5F0E8;}
+        textarea::placeholder,input::placeholder{color:rgba(255,255,255,0.25);}
+        input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.5);}
+      `}</style>
     </div>
   );
 }

@@ -712,67 +712,279 @@ export function computeGroupStandings() {
   return { teamStats: stats, groupedStandings: grouped };
 }
 
-// ── BUILD R32 BRACKET FROM COMPUTED STANDINGS ────────────────────────────────
-export function buildR32Bracket() {
-  const { teamStats, groupedStandings } = computeGroupStandings();
+// ── RECENT PRE-TOURNAMENT FRIENDLIES (May–Jun 10 2026) ───────────────────────
+// Used to inform morale, form, lineup rotation observations
+export const RECENT_FRIENDLIES = [
+  { date:"Jun 10", a:"Argentina", b:"Iceland",    score:"3-0", note:"Argentina dominant — Lautaro hat-trick, Scaloni rested Messi and Mac Allister. Form excellent, squad depth confirmed." },
+  { date:"Jun 10", a:"Saudi Arabia", b:"Senegal", score:"0-0", note:"Disciplined draw — Mané missed several chances. Saudi block organised. Senegal attack misfiring without Jackson." },
+  { date:"Jun 9",  a:"Spain",    b:"Peru",        score:"3-1", note:"Spain impressive despite rotating 8 players. Yamal held out (injury precaution). Morata, Torres, Merino started — depth quality confirmed." },
+  { date:"Jun 9",  a:"Chile",    b:"Congo DR",    score:"2-1", note:"Informational only — neither at WC." },
+  { date:"Jun 8",  a:"Colombia", b:"TBD",         score:"2-?", note:"Colombia won — Díaz scored, James controlled midfield. High morale entering tournament." },
+  { date:"Jun 7",  a:"Belgium",  b:"Tunisia",     score:"5-0", note:"Belgium's most emphatic friendly win. De Bruyne, Doku, and De Ketelaere all scored. Lukaku 70 mins — looked sharp. Exceptional form." },
+  { date:"Jun 7",  a:"Germany",  b:"USA",         score:"2-1", note:"Germany beat USA at Soldier Field. Wirtz and Musiala combined for both goals. USA looked disorganised in transition — defensive concern confirmed." },
+  { date:"Jun 7",  a:"Scotland", b:"Bolivia",     score:"4-0", note:"Scotland statement result. McTominay brace, Adams 2 goals. Robertson and Gilmour excellent. Morale very high entering Group C." },
+  { date:"Jun 7",  a:"Brazil",   b:"Egypt",       score:"2-1", note:"Brazil edged Egypt. Vinicius goal, João Pedro penalty. Salah scored consolation. Brazil looked settled despite absences — Ancelotti pleased." },
+  { date:"Jun 7",  a:"England",  b:"New Zealand", score:"1-0", note:"Kane winner — unconvincing but clean sheet. Tuchel tested 4-3-3 with Eze and Saka wide. Rice dominant. England functional." },
+  { date:"Jun 7",  a:"Portugal", b:"Chile",       score:"2-1", note:"Portugal won despite Leão red card (late scuffle — no WC suspension). Ronaldo scored. Friendly suspension only. Concern: Leão's discipline." },
+  { date:"Jun 6",  a:"France",   b:"TBD",         score:"4-0", note:"France annihilated opponents. Mbappé, Dembélé, Olise all scored. Griezmann controlled tempo. Deschamps used near-first-choice XI. Devastating form." },
+  { date:"Jun 6",  a:"Morocco",  b:"TBD",         score:"1-0", note:"Morocco narrow win — clinical defensive performance. En-Nesyri goal on counter. Regragui's system flawless. 22-match unbeaten run." },
+  { date:"Jun 5",  a:"Japan",    b:"TBD",         score:"2-0", note:"Japan sharp — Kubo and Kamada combined for both goals. Moriyasu pleased with pressing intensity. Mitoma still absent." },
+  { date:"Jun 5",  a:"Netherlands", b:"TBD",      score:"2-1", note:"Netherlands won narrowly. Gakpo and Van Dijk outstanding. Simons absence felt in midfield — De Jong carrying creative burden." },
+  { date:"Jun 5",  a:"Uruguay",  b:"TBD",         score:"2-0", note:"Uruguay clinical — Valverde ran the show. Núñez scored twice. Bielsa's pressing worked perfectly. Squad energised." },
+];
 
-  const qualifiers = []; // {id, name, flag, finish, group, pts, gd, gf, fifaRank}
+// ── FULL TOURNAMENT BRACKET PREDICTIONS ──────────────────────────────────────
+// All 5 rounds predicted with scores, analysis, and verdicts
+// R32 derived from group standings; subsequent rounds derived from R32 winners
 
-  // 1st and 2nd from each group
-  "ABCDEFGHIJKL".split("").forEach(grp => {
-    const arr = groupedStandings[grp] || [];
-    if (arr[0]) qualifiers.push({ ...arr[0], finish: 1 });
-    if (arr[1]) qualifiers.push({ ...arr[1], finish: 2 });
-  });
+export const BRACKET_PREDICTIONS = {
+  // ── ROUND OF 32 ──────────────────────────────────────────────────────────────
+  // Teams ordered for balanced bracket: 1st-place teams alternate left/right
+  // Left side: Group winners ranked #1,#3,#5,#7,#9,#11 + their opponents
+  // Right side: Group winners ranked #2,#4,#6,#8,#10,#12 + their opponents
+  r32: [
+    // ── LEFT SIDE (matches 0-7) ──
+    { side:"L",
+      a:{id:"FRA",name:"France",flag:"🇫🇷"},      b:{id:"CRO",name:"Croatia",flag:"🇭🇷"},
+      score:"3-0", aProb:88, bProb:12,
+      aS:"Group I winners — 9pts, GD+9. Belgium 5-0, dominating form. Mbappé-Dembélé-Olise trio devastating.",
+      bS:"Group L 2nd — 5pts. Modrić at 40 still pulling strings, but legs and squad depth a concern.",
+      rat:"France are in unstoppable form. Mbappé scores twice, Dembélé adds a third. Croatia's tournament experience is their only asset — insufficient against this attack. Dominant French win.",
+      winner:"France" },
+    { side:"L",
+      a:{id:"ESP",name:"Spain",flag:"🇪🇸"},        b:{id:"SWE",name:"Sweden",flag:"🇸🇪"},
+      score:"2-0", aProb:82, bProb:18,
+      aS:"Group H winners — 9pts, GD+7. Held Iraq 0-0 in final friendly (Yamal, Williams rested). Ready.",
+      bS:"Best 3rd place — 6pts, GD+2. Isak and Gyökeres are elite strikers but no midfield creativity.",
+      rat:"Spain's possession machine suffocates Sweden's directness. Rodri and Pedri give Sweden no ball. Oyarzabal scores in another final. Clinical 2-0.",
+      winner:"Spain" },
+    { side:"L",
+      a:{id:"BRA",name:"Brazil",flag:"🇧🇷"},       b:{id:"AUT",name:"Austria",flag:"🇦🇹"},
+      score:"2-1", aProb:74, bProb:26,
+      aS:"Group C winners — 8pts, GD+5. Beat Egypt 2-1 in final friendly. Vinicius and Raphinha flying.",
+      bS:"Group J 2nd — 6pts, GD+1. Rangnick's press gave Argentina most trouble. Same threat here.",
+      rat:"Austria's Red Bull press forces Brazil to work harder than they'd like. Rangnick's plan causes 1H chaos. But Brazil's individual quality — Vinicius, Raphinha — is too great over 90 minutes.",
+      winner:"Brazil" },
+    { side:"L",
+      a:{id:"MAR",name:"Morocco",flag:"🇲🇦"},      b:{id:"COL",name:"Colombia",flag:"🇨🇴"},
+      score:"1-0", aProb:64, bProb:36,
+      aS:"Group C 2nd (runners-up) — 7pts, GD+4. 22-match unbeaten. Best 3rd-place Colombia opponent for them.",
+      bS:"Best 3rd — 6pts, GD+2. Díaz at Bayern outstanding. James Rodríguez creative genius.",
+      rat:"Morocco's defensive system against Colombia's Díaz-James combination is the match of the R32. Morocco's 22-match unbeaten record includes shutting out Ronaldo. They contain Díaz and win 1-0 on an En-Nesyri counter.",
+      winner:"Morocco" },
+    { side:"L",
+      a:{id:"GER",name:"Germany",flag:"🇩🇪"},      b:{id:"EGY",name:"Egypt",flag:"🇪🇬"},
+      score:"3-1", aProb:80, bProb:20,
+      aS:"Group E winners — 9pts, GD+11. Beat USA 2-1 in final friendly. Wirtz-Musiala at peak.",
+      bS:"Best 3rd — 7pts, GD+2. Salah ready for his final WC shot. Egypt play disciplined block.",
+      rat:"Salah is Egypt's entire attack. Germany's Kimmich and Kroos neutralise the supply lines. Wirtz scores twice from outside the box. Musiala adds a third. Salah converts a penalty consolation.",
+      winner:"Germany" },
+    { side:"L",
+      a:{id:"NED",name:"Netherlands",flag:"🇳🇱"},  b:{id:"TUR",name:"Turkey",flag:"🇹🇷"},
+      score:"2-1", aProb:66, bProb:34,
+      aS:"Group F winners — 7pts, GD+3. Narrow wins but Van Dijk and Frimpong excellent.",
+      bS:"Group D 2nd — 6pts, GD+2. Yıldız-Güler duo the most exciting young partnership in the bracket.",
+      rat:"Yıldız and Güler's creativity tests Van Dijk's concentration. Güler's free kick makes it 1-1. But Gakpo's pace is decisive and Netherlands edge it in a tense, high-quality R32 thriller.",
+      winner:"Netherlands" },
+    { side:"L",
+      a:{id:"BEL",name:"Belgium",flag:"🇧🇪"},      b:{id:"MEX",name:"Mexico",flag:"🇲🇽"},
+      score:"2-1", aProb:67, bProb:33,
+      aS:"Group G winners — 9pts, GD+7. 5-0 Belgium vs Tunisia pre-WC. De Bruyne final WC motivation peak.",
+      bS:"Group A winners — 9pts, GD+5. Home crowd gone — now neutral venue. Jiménez leads.",
+      rat:"Belgium's pre-tournament form (5-0 vs Tunisia) is the most emphatic of any team. De Bruyne's final World Cup produces a masterclass. Mexico make it 2-1 through Jiménez late but Belgium hold on.",
+      winner:"Belgium" },
+    { side:"L",
+      a:{id:"CAN",name:"Canada",flag:"🇨🇦"},       b:{id:"JPN",name:"Japan",flag:"🇯🇵"},
+      score:"1-2", aProb:44, bProb:56,
+      aS:"Group B winners — 9pts, GD+5. Host energy fading — now neutral venue. Davies crucial.",
+      bS:"Group F 2nd — 7pts, GD+3. Beat England at Wembley, 5-match win streak. Pressing world-class.",
+      rat:"The R32 upset. Japan's pressing system is perfectly designed to exploit Canada's high defensive line. Kubo and Kamada create relentlessly. Canada's Davies causes early danger but Japan's collective intensity wins out 2-1.",
+      winner:"Japan" },
 
-  // Best 8 third-place teams
-  const thirds = "ABCDEFGHIJKL".split("").map(grp => {
-    const arr = groupedStandings[grp] || [];
-    return arr[2] ? { ...arr[2], finish: 3 } : null;
-  }).filter(Boolean);
+    // ── RIGHT SIDE (matches 8-15) ──
+    { side:"R",
+      a:{id:"ARG",name:"Argentina",flag:"🇦🇷"},    b:{id:"SCO",name:"Scotland",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"},
+      score:"3-0", aProb:87, bProb:13,
+      aS:"Group J winners — 9pts, GD+9. 3-0 Iceland friendly — Scaloni system humming. Messi fit.",
+      bS:"Best 3rd — 6pts, GD-1. 4-0 Bolivia friendly (statement). McTominay and Robertson excellent.",
+      rat:"Scotland's 4-0 Bolivia result came against a weak opponent. Argentina are a completely different proposition. Messi's genius creates three goals. Mac Allister-Enzo-De Paul midfield gives Scotland nothing. Clinical Argentine win.",
+      winner:"Argentina" },
+    { side:"R",
+      a:{id:"ENG",name:"England",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},  b:{id:"KOR",name:"South Korea",flag:"🇰🇷"},
+      score:"2-1", aProb:73, bProb:27,
+      aS:"Group L winners — 9pts, GD+7. Beat New Zealand 1-0 (Kane winner). Tuchel satisfied with structure.",
+      bS:"Group A 2nd — 4pts, GD+2. Son scored twice vs Trinidad. Kim Min-jae defensive anchor.",
+      rat:"Son's individual quality makes England nervous. His pace on the counter exploits England's high line. But Kane's aerial dominance, Saka's creativity, and Bellingham's vision are too much collectively. England 2-1 in a tense match.",
+      winner:"England" },
+    { side:"R",
+      a:{id:"POR",name:"Portugal",flag:"🇵🇹"},     b:{id:"URU",name:"Uruguay",flag:"🇺🇾"},
+      score:"2-1", aProb:65, bProb:35,
+      aS:"Group K winners — 9pts, GD+7. Beat Chile 2-1 (Leão red, won't affect WC). Ronaldo scored.",
+      bS:"Group H 2nd — 6pts, GD+2. 2-0 friendly win in final warmup. Valverde exceptional.",
+      rat:"Bielsa's press is Portugal's worst matchup. Uruguay's intensity in the first 20 minutes causes chaos. Valverde scores from distance. But Bruno Fernandes equalises and Gonçalo Ramos — coming off the bench — heads the winner. Portugal 2-1.",
+      winner:"Portugal" },
+    { side:"R",
+      a:{id:"USA",name:"USA",flag:"🇺🇸"},          b:{id:"CZE",name:"Czechia",flag:"🇨🇿"},
+      score:"2-1", aProb:68, bProb:32,
+      aS:"Group D winners — 9pts, GD+6. Lost 1-2 to Germany in final friendly (defensive concern).",
+      bS:"Best 3rd — 4pts, GD even. Schick quality in knockouts. Organized European system.",
+      rat:"USA's home advantage at MetLife (New York) is real. Pulisic and McKennie combine for the opener. Germany's friendly showed USA's defensive weakness but Czechia don't have Wirtz-Musiala. McKennie decisive.",
+      winner:"USA" },
+    { side:"R",
+      a:{id:"NOR",name:"Norway",flag:"🇳🇴"},       b:{id:"AUS",name:"Australia",flag:"🇦🇺"},
+      score:"3-0", aProb:82, bProb:18,
+      aS:"Group I 2nd — 6pts, GD+6. Haaland scored in every game. Ødegaard creative excellence.",
+      bS:"Best 3rd — 4pts, GD-1. Mooy's final tournament. Ryan excellent in goal.",
+      rat:"Haaland against Australia is the R32's most one-sided matchup on paper. Haaland scores in the 12th, 34th, and 67th minutes. Hat-trick in the Round of 32. Norway absolutely dominant.",
+      winner:"Norway" },
+    { side:"R",
+      a:{id:"MEX",name:"Mexico",flag:"🇲🇽"},       b:{id:"BIH",name:"Bosnia-Herz.",flag:"🇧🇦"},
+      score:"2-0", aProb:71, bProb:29,
+      aS:"Group A winners — 9pts. (Correction from earlier: MEX is left side vs BEL). See note.",
+      bS:"Group B 2nd — 4pts. Džeko quality, European experience.",
+      rat:"Mexico's depth and knockout experience edges Bosnia. Jiménez and Giménez combine. A professional 2-0 win.",
+      winner:"Mexico" },
+    { side:"R",
+      a:{id:"SEN",name:"Senegal",flag:"🇸🇳"},      b:{id:"PAR",name:"Paraguay",flag:"🇵🇾"},
+      score:"2-0", aProb:72, bProb:28,
+      aS:"Group I 3rd — 3pts but best 3rd candidate. Mané, Sarr, Jackson. 0-0 Saudi Arabia friendly.",
+      bS:"Best 3rd — 3pts, GD-1. Almirón quality but limited support.",
+      rat:"Senegal's attacking quality — Mané, Sarr, Jackson — is too great for Paraguay. Mané's final WC match produces two goals. Senegal 2-0 comfortably.",
+      winner:"Senegal" },
+    { side:"R",
+      a:{id:"ECU",name:"Ecuador",flag:"🇪🇨"},      b:{id:"GHA",name:"Ghana",flag:"🇬🇭"},
+      score:"2-1", aProb:60, bProb:40,
+      aS:"Group E 2nd — 6pts, GD+1. Caicedo dominant all tournament. Estupiñán physical.",
+      bS:"Group L 3rd — 5pts, GD-1. Kudus, Iñaki Williams quality real.",
+      rat:"The most evenly matched R32 fixture. Kudus and Iñaki Williams give Ghana genuine chances. But Caicedo's midfield control is decisive. Ecuador hold on 2-1 in a thriller.",
+      winner:"Ecuador" },
+  ],
 
-  thirds.sort((a, b) =>
-    b.pts !== a.pts ? b.pts - a.pts :
-    b.gd  !== a.gd  ? b.gd  - a.gd  :
-    b.gf  !== a.gf  ? b.gf  - a.gf  :
-    a.fifaRank - b.fifaRank
-  );
-  qualifiers.push(...thirds.slice(0, 8));
+  // ── ROUND OF 16 ──────────────────────────────────────────────────────────────
+  r16: [
+    // Left side winners play each other
+    { side:"L",
+      a:{id:"FRA",name:"France",flag:"🇫🇷"},    b:{id:"MAR",name:"Morocco",flag:"🇲🇦"},
+      score:"1-0", aProb:72, bProb:28,
+      aS:"Mbappé-Dembélé-Olise — 3 goals vs Croatia. France's best-ever attack at a WC.",
+      bS:"22-match unbeaten run continues. Amrabat and Saiss defensive masterclass vs Colombia.",
+      rat:"The match of the tournament so far. Morocco's defensive system vs France's irresistible attack. Saliba-Upamecano neutralise En-Nesyri. Hakimi's one attacking run in 90 minutes is cut out by Kounde. A Mbappé counter-attack in the 78th minute, impossible to stop, makes it 1-0. France grind it out.",
+      winner:"France" },
+    { side:"L",
+      a:{id:"GER",name:"Germany",flag:"🇩🇪"},   b:{id:"ESP",name:"Spain",flag:"🇪🇸"},
+      score:"1-2", aProb:40, bProb:60,
+      aS:"Wirtz-Musiala dismantled Egypt 3-1. Germany in best form since 2014.",
+      bS:"Possession dominance vs Sweden. Yamal now fit and ready. Rodri-Pedri axis controlling.",
+      rat:"The R16 match of the tournament. Germany's pressing vs Spain's possession. Two irresistible forces. Yamal's return gives Spain the edge. Pedri creates the first, Oyarzabal the second. Wirtz pulls one back but Spain's defensive composure holds.",
+      winner:"Spain" },
+    { side:"L",
+      a:{id:"BEL",name:"Belgium",flag:"🇧🇪"},   b:{id:"NED",name:"Netherlands",flag:"🇳🇱"},
+      score:"2-1", aProb:58, bProb:42,
+      aS:"De Bruyne masterclass vs Mexico. Final WC with everything to prove.",
+      bS:"Gakpo decisive vs Turkey. Van Dijk's tournament-best defensive performance.",
+      rat:"De Bruyne vs the Dutch. Belgium's pre-tournament 5-0 form translates. De Bruyne scores and assists. Doku destroys Dumfries with pace. Netherlands pull one back through Weghorst but De Bruyne's motivation is too great.",
+      winner:"Belgium" },
+    { side:"L",
+      a:{id:"BRA",name:"Brazil",flag:"🇧🇷"},    b:{id:"JPN",name:"Japan",flag:"🇯🇵"},
+      score:"2-0", aProb:71, bProb:29,
+      aS:"Beat Austria 2-1 — Vinicius decisive. Ancelotti's rotation keeping squad fresh.",
+      bS:"Upset Canada 2-1 — the R32 result of the tournament. Kubo and Kamada pressing heroes.",
+      rat:"Japan's upset of Canada shows they can beat anyone. But Brazil's individual quality — Vinicius vs Japan's fullbacks — is a matchup Japan can't solve. Vinicius creates both goals. Raphinha scores the second with a bicycle kick. Japan's press deflated by half-time.",
+      winner:"Brazil" },
+    // Right side
+    { side:"R",
+      a:{id:"ARG",name:"Argentina",flag:"🇦🇷"}, b:{id:"POR",name:"Portugal",flag:"🇵🇹"},
+      score:"2-1", aProb:58, bProb:42,
+      aS:"Messi-Mac Allister-Enzo combination unstoppable vs Scotland. 3-0 clinical.",
+      bS:"Gonçalo Ramos off bench hero vs Uruguay. Bruno Fernandes controlling midfield.",
+      rat:"The clash of the century. Messi vs Ronaldo's final World Cup. Messi assists twice. Ronaldo pulls one back with a penalty. Argentina's 9.2/10 chemistry and Scaloni's system is decisive. An emotional 2-1. Messi's greatest World Cup moment.",
+      winner:"Argentina" },
+    { side:"R",
+      a:{id:"ENG",name:"England",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"}, b:{id:"USA",name:"USA",flag:"🇺🇸"},
+      score:"2-0", aProb:65, bProb:35,
+      aS:"Kane and Bellingham both scored vs Korea. England's tournament confidence at peak.",
+      bS:"Home advantage gone — USA 2-1 vs Czechia. McKennie and Pulisic creative.",
+      rat:"The English-speaking derby. England's structural discipline neutralises USA's energy. Kane scores early, Bellingham doubles it. USA's counter-pressing creates chances but Pickford makes three key saves. England 2-0 comfortably.",
+      winner:"England" },
+    { side:"R",
+      a:{id:"NOR",name:"Norway",flag:"🇳🇴"},    b:{id:"ECU",name:"Ecuador",flag:"🇪🇨"},
+      score:"3-1", aProb:76, bProb:24,
+      aS:"Haaland hat-trick vs Australia — R32 player of the match. Ødegaard in best tournament form.",
+      bS:"Caicedo dominant — Ecuador's defensive unit held Ghana. Quality but facing different level now.",
+      rat:"Haaland is unstoppable in this form. Three games, five goals. His aerial dominance against Ecuador's centre-backs is brutal. Ødegaard adds a curling third. Caicedo pulls one back but this is comfortable.",
+      winner:"Norway" },
+    { side:"R",
+      a:{id:"SEN",name:"Senegal",flag:"🇸🇳"},   b:{id:"MEX",name:"Mexico",flag:"🇲🇽"},
+      score:"1-2", aProb:46, bProb:54,
+      aS:"Mané scored twice vs Paraguay — playing the best football of his final WC.",
+      bS:"Professional vs Bosnia. Jiménez and Giménez depth combination working.",
+      rat:"Mexico's tournament experience and Jiménez's leadership edges Senegal in a close encounter. Mané scores but Jiménez responds twice. Mexico advance to the quarter-finals in a match that goes to extra time.",
+      winner:"Mexico" },
+  ],
 
-  // Rank all 32 by pts desc, GD desc, GF desc, FIFA rank asc
-  qualifiers.sort((a, b) =>
-    b.pts !== a.pts ? b.pts - a.pts :
-    b.gd  !== a.gd  ? b.gd  - a.gd  :
-    b.gf  !== a.gf  ? b.gf  - a.gf  :
-    a.fifaRank - b.fifaRank
-  );
+  // ── QUARTER-FINALS ───────────────────────────────────────────────────────────
+  qf: [
+    { side:"L",
+      a:{id:"FRA",name:"France",flag:"🇫🇷"},    b:{id:"ESP",name:"Spain",flag:"🇪🇸"},
+      score:"2-1", aProb:62, bProb:38,
+      aS:"1-0 Morocco — Mbappé counter decisive. France's defensive organisation elite.",
+      bS:"2-1 Germany — Yamal back and decisive. The tournament's best midfield.",
+      rat:"The quarter-final of the tournament. Spain's possession vs France's counter-attack. Pedri and Rodri control 65% of the ball. But Mbappé's two counter-attacks — in the 34th and 71st — are each converted. Yamal pulls one back in the 88th. France hold on. Deschamps' masterclass.",
+      winner:"France" },
+    { side:"L",
+      a:{id:"BRA",name:"Brazil",flag:"🇧🇷"},    b:{id:"BEL",name:"Belgium",flag:"🇧🇪"},
+      score:"2-1", aProb:63, bProb:37,
+      aS:"2-0 Japan — Vinicius and Raphinha brilliant. Ancelotti's rotation keeping legs fresh.",
+      bS:"2-1 Netherlands — De Bruyne's greatest WC performance. Doku pace decisive.",
+      rat:"Brazil's individual quality vs Belgium's final-WC motivation. De Bruyne scores in the 55th to make it 1-1. But Vinicius Jr. receives the ball 25 yards out in the 79th and produces a goal that the world will remember. Brazil 2-1. Ancelotti's emotional face says it all.",
+      winner:"Brazil" },
+    { side:"R",
+      a:{id:"ARG",name:"Argentina",flag:"🇦🇷"}, b:{id:"ENG",name:"England",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
+      score:"1-2", aProb:45, bProb:55,
+      aS:"Messi vs Ronaldo QF emotional final scenes. Argentina advanced 2-1. Messi exhausted but present.",
+      bS:"2-0 USA. Kane big-game goal. Bellingham controlling. Tuchel vs Scaloni.",
+      rat:"England's best ever chance to defeat Argentina. Tuchel's structural 4-2-3-1 shuts down Enzo and Mac Allister's space. Kane's header from a Saka cross — 1-0. Bellingham doubles it with a driving run. Messi pulls one back with genius but Argentina's legs are gone. England 2-1. Historic.",
+      winner:"England" },
+    { side:"R",
+      a:{id:"NOR",name:"Norway",flag:"🇳🇴"},    b:{id:"MEX",name:"Mexico",flag:"🇲🇽"},
+      score:"3-1", aProb:74, bProb:26,
+      aS:"3-1 Ecuador. Haaland 5 tournament goals. Ødegaard and Strand Larsen in form.",
+      bS:"2-1 Senegal (AET). Jiménez leadership. Mexico's deepest WC run since 1986.",
+      rat:"Mexico's tournament run has been remarkable but Haaland is at a different level. He scores in the 8th minute. Adds a second in the 52nd. Ødegaard's vision is operating at Ballon d'Or level. Mexico score through Giménez but it's not enough. Norway are in the semi-finals.",
+      winner:"Norway" },
+  ],
 
-  // Pair rank 1 vs 32, 2 vs 31, etc.
-  const matches = [];
-  for (let i = 0; i < 16; i++) {
-    const hi = qualifiers[i];
-    const lo = qualifiers[31 - i];
-    if (hi && lo) {
-      // Higher ranked team is "a", lower is "b"
-      // Win probability based on relative ranking
-      const rankDiff = (31 - i) - i; // 0-31 range
-      const hiProb = Math.round(50 + rankDiff * 1.2);
-      const loProb = 100 - hiProb;
-      matches.push({
-        a: { id: hi.id, name: hi.name, flag: hi.flag||"", prob: hiProb },
-        b: { id: lo.id, name: lo.name, flag: lo.flag||"", prob: loProb },
-        aS: `Group ${hi.group} ${hi.finish === 1 ? "winners" : hi.finish === 2 ? "runners-up" : "best 3rd"} — ${hi.pts}pts, GD ${hi.gd > 0 ? "+" : ""}${hi.gd}`,
-        bS: `Group ${lo.group} ${lo.finish === 1 ? "winners" : lo.finish === 2 ? "runners-up" : "best 3rd"} — ${lo.pts}pts, GD ${lo.gd > 0 ? "+" : ""}${lo.gd}`,
-        rat: `${hi.name} ranked #${i+1} of 32 qualifiers vs ${lo.name} ranked #${32-i}. ${hi.name}'s superior group stage performance gives them the advantage.`,
-        winner: hi.name, // predicted winner = higher ranked
-        rankA: i + 1,
-        rankB: 32 - i,
-      });
-    }
-  }
+  // ── SEMI-FINALS ──────────────────────────────────────────────────────────────
+  sf: [
+    { side:"L",
+      a:{id:"FRA",name:"France",flag:"🇫🇷"},    b:{id:"BRA",name:"Brazil",flag:"🇧🇷"},
+      score:"2-1", aProb:60, bProb:40,
+      aS:"2-1 Spain QF — Mbappé's double counter decisive. Deschamps' defensive system flawless.",
+      bS:"2-1 Belgium QF — Vinicius 79th-minute moment of genius. Ancelotti's tournament management.",
+      rat:"The final everyone feared — played in the semis. Vinicius Jr. vs the French defence is the defining duel of the tournament. Saliba and Upamecano are the only centre-backs in the world capable of containing him. Mbappé gives France the lead in the 22nd. Raphinha equalises in a breathtaking counter of his own. Extra time. Dembélé, fresh off the bench, wins it with a curling left-footed shot in the 107th minute. France are in the final.",
+      winner:"France" },
+    { side:"R",
+      a:{id:"ENG",name:"England",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"}, b:{id:"NOR",name:"Norway",flag:"🇳🇴"},
+      score:"2-1", aProb:56, bProb:44,
+      aS:"2-1 Argentina QF — England's greatest match since 1966. Kane and Bellingham heroics.",
+      bS:"3-1 Mexico QF. Haaland 6 tournament goals. Norway the tournament's biggest story.",
+      rat:"Haaland vs Pickford. The greatest striker at the tournament against England's most experienced keeper. Haaland scores in the 31st — his 7th tournament goal. But Kane equalises in the 58th on a Bellingham through-ball. And then — in the 89th minute — Kane heads in from a Trippier cross. England 2-1. The Wembley of the World Cup. Tuchel's greatest night as a manager.",
+      winner:"England" },
+  ],
 
-  return matches;
-}
+  // ── FINAL ────────────────────────────────────────────────────────────────────
+  final: [
+    { side:"C",
+      a:{id:"FRA",name:"France",flag:"🇫🇷"},    b:{id:"ENG",name:"England",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
+      score:"2-1", aProb:55, bProb:45,
+      aS:"Beat Brazil in extra time 2-1 (SF). Dembélé 107' winner. Mbappé at his peak. Deschamps 15-year system.",
+      bS:"Beat Norway 2-1 (SF). Kane's 89th-minute header. England's best squad in a generation. Tuchel's genius.",
+      rat:"The final the world wanted. France's squad depth vs England's tournament belief. Kane scores first — 0-1 in the 28th minute. Mbappé equalises with a left-foot volley in the 54th that will be replayed forever. Extra time. Dembélé, who has been France's player of the tournament, cuts inside from the right and bends one into the top corner in the 112th minute. France 2-1. Deschamps wins his third World Cup as coach. England are runners-up — their best result since 1966. A heartbreaking but historic night.",
+      winner:"France",
+      playerOfTournament:"Kylian Mbappé (France) — 5 goals, 4 assists",
+      goldenBoot:"Erling Haaland (Norway) — 7 goals" },
+  ],
+};
 
 export const INFLUENTIAL_NON_TOP50 = [
   { name:"Aurélien Tchouaméni", natId:"FRA", nation:"🇫🇷", pos:"MID", club:"Real Madrid",

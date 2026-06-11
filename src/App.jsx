@@ -1,5 +1,24 @@
 import { useState, useCallback, useEffect, useRef, createContext, useContext } from "react";
-import { Flag, INITIAL_TEAMS, INITIAL_PLAYERS, INFLUENTIAL_NON_TOP50, FACTOR_WEIGHTS, MATCH_FACTORS, PREDICTED_KNOCKOUT, INITIAL_GROUPS, GROUP_MATCH_PREDICTIONS, PREDICTED_GROUP_STANDINGS } from "./data.jsx";
+import { Flag, INITIAL_TEAMS, INITIAL_PLAYERS, INFLUENTIAL_NON_TOP50, FACTOR_WEIGHTS, MATCH_FACTORS, INITIAL_GROUPS, GROUP_MATCH_PREDICTIONS, FIFA_RANK, computeGroupStandings, buildR32Bracket } from "./data.jsx";
+
+// ── COMPUTE STANDINGS + BRACKET ONCE ─────────────────────────────────────────
+const { teamStats: TEAM_STATS, groupedStandings: GROUPED_STANDINGS } = computeGroupStandings();
+const R32_MATCHES = buildR32Bracket();
+
+// Derive sorted group arrays for Overview
+const COMPUTED_GROUPS = Object.fromEntries(
+  Object.entries(GROUPED_STANDINGS).map(([g, arr]) => [g, arr])
+);
+
+// Best 8 thirds (for badge display)
+const ALL_THIRDS = "ABCDEFGHIJKL".split("").map(g => {
+  const arr = GROUPED_STANDINGS[g] || [];
+  return arr[2] ? { ...arr[2], group: g } : null;
+}).filter(Boolean);
+ALL_THIRDS.sort((a,b) =>
+  b.pts!==a.pts?b.pts-a.pts:b.gd!==a.gd?b.gd-a.gd:b.gf!==a.gf?b.gf-a.gf:a.fifaRank-b.fifaRank
+);
+const BEST_THIRDS_IDS = new Set(ALL_THIRDS.slice(0,8).map(t=>t.id));
 
 // ── THEME CONTEXT ─────────────────────────────────────────────────────────────
 const ThemeCtx = createContext({ dark: true });
@@ -71,28 +90,6 @@ const SORT_OPTIONS  = [
   {key:"saves",label:"Saves (GK)"},
 ];
 
-// ── BEST THIRD-PLACE LOGIC ────────────────────────────────────────────────────
-// Predicted 3rd-place finishers with estimated stats from group predictions
-// Based on FIFA tiebreaker rules: pts → H2H → GD → GS → disciplinary → FIFA rank
-const PREDICTED_THIRDS = [
-  { group:"A", name:"Czechia",      id:"CZE", pts:4, gd:0,  gs:3, fifaRank:40 },
-  { group:"B", name:"Bosnia-Herz.", id:"BIH", pts:3, gd:-1, gs:2, fifaRank:60 },
-  { group:"C", name:"Scotland",     id:"SCO", pts:3, gd:-2, gs:2, fifaRank:38 },
-  { group:"D", name:"Paraguay",     id:"PAR", pts:3, gd:-1, gs:2, fifaRank:62 },
-  { group:"E", name:"Ivory Coast",  id:"CIV", pts:3, gd:-2, gs:3, fifaRank:58 },
-  { group:"F", name:"Sweden",       id:"SWE", pts:3, gd:0,  gs:3, fifaRank:25 },
-  { group:"G", name:"Egypt",        id:"EGY", pts:4, gd:1,  gs:3, fifaRank:44 },
-  { group:"H", name:"Saudi Arabia", id:"KSA", pts:3, gd:-3, gs:1, fifaRank:56 },
-  { group:"I", name:"Senegal",      id:"SEN", pts:3, gd:-1, gs:2, fifaRank:20 },
-  { group:"J", name:"Austria",      id:"AUT", pts:3, gd:-1, gs:2, fifaRank:26 },
-  { group:"K", name:"Colombia",     id:"COL", pts:6, gd:2,  gs:4, fifaRank:12 },
-  { group:"L", name:"Croatia",      id:"CRO", pts:3, gd:-1, gs:2, fifaRank:10 },
-];
-
-// Sort by pts desc, then GD desc, then GS desc, then FIFA rank asc
-const BEST_THIRDS = [...PREDICTED_THIRDS]
-  .sort((a,b) => b.pts!==a.pts ? b.pts-a.pts : b.gd!==a.gd ? b.gd-a.gd : b.gs!==a.gs ? b.gs-a.gs : a.fifaRank-b.fifaRank)
-  .slice(0,8);
 
 function ChangeIndicator({change}){
   const t = useTheme();
@@ -307,44 +304,75 @@ function OverviewTab({teams}){
         </div>
       </div>
 
-      {/* Predicted Group Standings */}
+      {/* Predicted Group Stage Standings — full stats tables */}
       <div>
         <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.25em",color:t.gold,textTransform:"uppercase",marginBottom:6}}>Predicted Group Stage Standings</div>
-        <div style={{fontSize:13,color:t.textMuted,marginBottom:16,maxWidth:600}}>Projected final standings based on individual match predictions. Top 2 qualify directly; best 8 third-place teams also advance.</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
-          {Object.entries(PREDICTED_GROUP_STANDINGS).map(([grp,teams_])=>(
-            <div key={grp} style={{background:t.surface2,border:`1px solid ${t.borderGold}`,borderRadius:5,overflow:"hidden"}}>
-              <div style={{background:t.dark?"rgba(201,168,76,0.08)":"rgba(160,120,30,0.06)",borderBottom:`1px solid ${t.borderGold}`,padding:"5px 12px"}}>
-                <span style={{fontFamily:"Impact,sans-serif",fontSize:18,color:t.gold}}>GROUP {grp}</span>
+        <div style={{fontSize:13,color:t.textMuted,marginBottom:16,maxWidth:700}}>Projected final standings computed from predicted scorelines. Top 2 per group qualify directly; best 8 third-place teams also advance (shown with purple badge).</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(380px,1fr))",gap:16}}>
+          {"ABCDEFGHIJKL".split("").map(grp => {
+            const teams_ = COMPUTED_GROUPS[grp] || [];
+            return (
+              <div key={grp} style={{background:t.surface2,border:`1px solid ${t.borderGold}`,borderRadius:5,overflow:"hidden"}}>
+                <div style={{background:t.dark?"rgba(201,168,76,0.08)":"rgba(160,120,30,0.06)",borderBottom:`1px solid ${t.borderGold}`,padding:"6px 12px"}}>
+                  <span style={{fontFamily:"Impact,sans-serif",fontSize:20,color:t.gold}}>GROUP {grp}</span>
+                </div>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                  <thead>
+                    <tr style={{borderBottom:`1px solid ${t.border}`}}>
+                      {["","Team","MP","W","D","L","GS","GC","GD","Pts"].map((h,hi)=>(
+                        <th key={hi} style={{padding:"5px 6px",fontFamily:"monospace",fontSize:9,letterSpacing:"0.08em",color:t.gold+"99",textAlign:hi<=1?"left":"center",fontWeight:400}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teams_.map((team, pos) => {
+                      const isBest3 = pos===2 && BEST_THIRDS_IDS.has(team.id);
+                      const qualifies = pos < 2 || isBest3;
+                      return (
+                        <tr key={team.id} style={{borderBottom:`1px solid ${t.border}`,background:pos===0?t.dark?"rgba(26,94,58,0.15)":"rgba(22,163,74,0.07)":pos===1?t.dark?"rgba(26,58,107,0.12)":"rgba(37,99,235,0.06)":isBest3?t.dark?"rgba(155,89,182,0.08)":"rgba(124,58,237,0.05)":"transparent"}}>
+                          <td style={{padding:"7px 6px",width:28}}>
+                            {pos===0&&<span style={{fontSize:8,fontFamily:"monospace",color:t.gold,background:t.dark?"rgba(201,168,76,0.15)":"rgba(160,120,30,0.1)",padding:"1px 3px",borderRadius:2}}>1ST</span>}
+                            {pos===1&&<span style={{fontSize:8,fontFamily:"monospace",color:t.blue,background:t.dark?"rgba(139,184,240,0.15)":"rgba(37,99,235,0.1)",padding:"1px 3px",borderRadius:2}}>2ND</span>}
+                            {isBest3&&<span style={{fontSize:8,fontFamily:"monospace",color:"#9b59b6",background:"rgba(155,89,182,0.15)",padding:"1px 3px",borderRadius:2}}>3RD</span>}
+                            {pos===2&&!isBest3&&<span style={{fontSize:8,fontFamily:"monospace",color:t.textDim}}>3rd</span>}
+                            {pos===3&&<span style={{fontSize:8,fontFamily:"monospace",color:t.textDim}}>4th</span>}
+                          </td>
+                          <td style={{padding:"7px 6px"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <Flag id={team.id} size={16} style={{borderRadius:2,flexShrink:0}}/>
+                              <span style={{color:qualifies?t.text:t.textMuted,fontWeight:qualifies?600:400}}>{team.name}</span>
+                            </div>
+                          </td>
+                          <td style={{textAlign:"center",padding:"7px 6px",color:t.textMuted,fontFamily:"monospace"}}>{team.mp}</td>
+                          <td style={{textAlign:"center",padding:"7px 6px",color:team.w>0?t.green:t.textMuted,fontFamily:"monospace",fontWeight:team.w>0?700:400}}>{team.w}</td>
+                          <td style={{textAlign:"center",padding:"7px 6px",color:t.textMuted,fontFamily:"monospace"}}>{team.d}</td>
+                          <td style={{textAlign:"center",padding:"7px 6px",color:team.l>0?t.red:t.textMuted,fontFamily:"monospace"}}>{team.l}</td>
+                          <td style={{textAlign:"center",padding:"7px 6px",color:t.text,fontFamily:"monospace"}}>{team.gf}</td>
+                          <td style={{textAlign:"center",padding:"7px 6px",color:t.textMuted,fontFamily:"monospace"}}>{team.ga}</td>
+                          <td style={{textAlign:"center",padding:"7px 6px",fontFamily:"monospace",fontWeight:700,color:team.gd>0?t.green:team.gd<0?t.red:t.textMuted}}>{team.gd>0?`+${team.gd}`:team.gd}</td>
+                          <td style={{textAlign:"center",padding:"7px 6px",fontFamily:"monospace",fontWeight:700,color:t.gold}}>{team.pts}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              {teams_.map((name,pos)=>{
-                const isBest3=pos===2&&BEST_THIRDS.find(x=>x.name===name);
-                return(
-                  <div key={name} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",background:pos===0?t.dark?"rgba(26,94,58,0.12)":"rgba(22,163,74,0.07)":pos===1?t.dark?"rgba(26,58,107,0.08)":"rgba(37,99,235,0.06)":isBest3?t.dark?"rgba(155,89,182,0.08)":"rgba(124,58,237,0.05)":"transparent",borderBottom:pos<3?`1px solid ${t.border}`:"none"}}>
-                    <span style={{fontFamily:"monospace",fontSize:10,color:pos<2?t.gold:isBest3?"#9b59b6":t.textMuted,width:14,textAlign:"center",flexShrink:0}}>{pos+1}</span>
-                    {pos===0&&<span style={{fontSize:9,fontFamily:"monospace",color:t.gold,background:t.dark?"rgba(201,168,76,0.12)":"rgba(160,120,30,0.1)",padding:"1px 4px",borderRadius:2,flexShrink:0}}>ADV</span>}
-                    {pos===1&&<span style={{fontSize:9,fontFamily:"monospace",color:t.blue,background:t.dark?"rgba(139,184,240,0.12)":"rgba(37,99,235,0.1)",padding:"1px 4px",borderRadius:2,flexShrink:0}}>ADV</span>}
-                    {isBest3&&<span style={{fontSize:9,fontFamily:"monospace",color:"#9b59b6",background:"rgba(155,89,182,0.12)",padding:"1px 4px",borderRadius:2,flexShrink:0}}>3RD</span>}
-                    <span style={{fontSize:12,color:pos<2||isBest3?t.text:t.textMuted,fontWeight:pos<2||isBest3?600:400}}>{name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Best 3rd place table */}
+        {/* Best 8 thirds panel */}
         <div style={{marginTop:20,padding:"16px 20px",background:t.dark?"rgba(155,89,182,0.06)":"rgba(124,58,237,0.04)",border:`1px solid ${t.dark?"rgba(155,89,182,0.2)":"rgba(124,58,237,0.15)"}`,borderRadius:6}}>
           <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.2em",color:"#9b59b6",textTransform:"uppercase",marginBottom:8}}>Best 8 Third-Place Teams — Predicted Advancement</div>
           <div style={{fontSize:12,color:t.textMuted,marginBottom:12,lineHeight:1.5}}>Ranked by: Points → Goal Difference → Goals Scored → FIFA World Ranking. The 8 best 3rd-place finishers from 12 groups advance to the Round of 32.</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
-            {BEST_THIRDS.map((team,i)=>(
+            {ALL_THIRDS.slice(0,8).map((team,i)=>(
               <div key={team.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:t.surface2,border:`1px solid ${t.dark?"rgba(155,89,182,0.2)":"rgba(124,58,237,0.12)"}`,borderRadius:4}}>
                 <span style={{fontFamily:"monospace",fontSize:12,color:"#9b59b6",fontWeight:700,width:18,flexShrink:0}}>#{i+1}</span>
                 <Flag id={team.id} size={18} style={{borderRadius:2}}/>
                 <div>
                   <div style={{fontSize:12,fontWeight:600,color:t.text}}>{team.name}</div>
-                  <div style={{fontSize:10,color:t.textMuted,fontFamily:"monospace"}}>Grp {team.group} · {team.pts}pts · GD {team.gd>0?"+":""}{team.gd}</div>
+                  <div style={{fontSize:10,color:t.textMuted,fontFamily:"monospace"}}>Grp {team.group} · {team.pts}pts · GD {team.gd>0?"+":""}{team.gd} · GS {team.gf}</div>
                 </div>
               </div>
             ))}
@@ -471,153 +499,141 @@ function BracketHalf({rounds, side, expandedMatch, onExpand}){
   );
 }
 
-function TwoSidedBracket({bracket}){
+function TwoSidedBracket({r32Matches}){
   const t=useTheme();
   const [expandedMatch,setExpandedMatch]=useState(null);
+  const handleExpand=(match)=>setExpandedMatch(expandedMatch===match?null:match);
 
-  // bracket[0] = R32 (16 matches), [1] = R16 (8), [2] = QF (4), [3] = SF (2), [4] = Final (1)
-  const r32 = bracket[0]?.matches||[];
-  const r16 = bracket[1]?.matches||[];
-  const qf  = bracket[2]?.matches||[];
-  const sf  = bracket[3]?.matches||[];
-  const fin = bracket[4]?.matches||[];
+  // R32: 16 matches. Left side = matches 0-7 (rank 1-8 vs 32-25), Right = 8-15 (rank 9-16 vs 24-17)
+  const leftR32  = r32Matches.slice(0,8);
+  const rightR32 = r32Matches.slice(8,16);
 
-  // Split into left (first half) and right (second half)
-  const leftR32  = r32.slice(0,8),  rightR32  = r32.slice(8,16);
-  const leftR16  = r16.slice(0,4),  rightR16  = r16.slice(4,8);
-  const leftQF   = qf.slice(0,2),   rightQF   = qf.slice(2,4);
-  const leftSF   = sf.slice(0,1),   rightSF   = sf.slice(1,2);
+  // R16 onward are TBD — show placeholder winners from R32 predictions
+  const leftR16  = leftR32.reduce((acc,_,i)=>i%2===0?[...acc,null]:acc,[]);   // 4 TBD slots
+  const rightR16 = rightR32.reduce((acc,_,i)=>i%2===0?[...acc,null]:acc,[]);
+  const leftQF   = [null, null];
+  const rightQF  = [null, null];
+  const leftSF   = [null];
+  const rightSF  = [null];
+  const final    = [null];
 
-  const ROUND_LABELS = ["Round of 32","Round of 16","Quarter-Finals","Semi-Finals"];
+  const MATCH_H=52, GAP=8;
 
-  const handleExpand = (match) => setExpandedMatch(expandedMatch===match?null:match);
+  function HalfBracket({rounds, dir}){
+    // dir: "left" progresses rightward, "right" progresses leftward
+    return(
+      <div style={{display:"flex",flexDirection:dir==="left"?"row":"row-reverse",alignItems:"flex-start"}}>
+        {rounds.map((roundMatches,ri)=>{
+          const gapV=GAP*Math.pow(2,ri);
+          const paddingTop=ri===0?0:gapV/2;
+          const svgH=(MATCH_H+gapV)*roundMatches.length-gapV+paddingTop*2;
+          return(
+            <div key={ri} style={{display:"flex",flexDirection:dir==="left"?"row":"row-reverse",alignItems:"flex-start"}}>
+              <div style={{display:"flex",flexDirection:"column",gap:gapV,paddingTop}}>
+                {roundMatches.map((match,mi)=>(
+                  <BracketMatchBox key={mi} match={match} expanded={expandedMatch===match} onExpand={match?handleExpand:()=>{}}/>
+                ))}
+              </div>
+              {ri<rounds.length-1&&roundMatches.length>1&&(
+                <svg width={28} height={Math.max(svgH,1)} style={{flexShrink:0,overflow:"visible"}}>
+                  {Array.from({length:Math.floor(roundMatches.length/2)},(_,i)=>{
+                    const yTop=paddingTop+i*2*(MATCH_H+gapV)+MATCH_H/2;
+                    const yBot=paddingTop+(i*2+1)*(MATCH_H+gapV)+MATCH_H/2;
+                    const yMid=(yTop+yBot)/2;
+                    const x1=dir==="left"?0:28, x2=dir==="left"?14:14, x3=dir==="left"?28:0;
+                    const c=t.dark?"rgba(201,168,76,0.35)":"rgba(160,120,30,0.3)";
+                    return[
+                      <line key={`a${i}`} x1={x1} y1={yTop} x2={x2} y2={yTop} stroke={c} strokeWidth={1.5}/>,
+                      <line key={`b${i}`} x1={x1} y1={yBot} x2={x2} y2={yBot} stroke={c} strokeWidth={1.5}/>,
+                      <line key={`c${i}`} x1={x2} y1={yTop} x2={x2} y2={yBot} stroke={c} strokeWidth={1.5}/>,
+                      <line key={`d${i}`} x1={x2} y1={yMid} x2={x3} y2={yMid} stroke={c} strokeWidth={1.5}/>,
+                    ];
+                  })}
+                </svg>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return(
     <div>
-      {/* Round labels */}
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,paddingBottom:6,borderBottom:`1px solid ${t.borderGold}`}}>
-        {["R32","R16","QF","SF","","SF","QF","R16","R32"].map((l,i)=>(
-          <div key={i} style={{flex:i===4?2:1,textAlign:"center",fontFamily:"monospace",fontSize:9,letterSpacing:"0.15em",color:l?t.gold:t.textDim,textTransform:"uppercase"}}>{l}</div>
+      {/* Round header labels */}
+      <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.25em",color:t.gold,textTransform:"uppercase",marginBottom:4}}>
+        Round of 32 — Computed from Predicted Group Stage Results
+      </div>
+      <div style={{fontSize:13,color:t.textMuted,marginBottom:16,lineHeight:1.5,maxWidth:700}}>
+        The 32 qualifiers (24 group 1sts &amp; 2nds + 8 best 3rd-place teams) are ranked by points, goal difference, and goals scored. Rank #1 faces #32, #2 faces #31, and so on. Rounds beyond R32 are determined once actual results are known.
+      </div>
+
+      {/* Round labels row */}
+      <div style={{display:"flex",marginBottom:8,paddingBottom:6,borderBottom:`1px solid ${t.borderGold}`}}>
+        {[["R32","8 matches"],["R16","TBD"],["QF","TBD"],["SF","TBD"],["","FINAL"],["SF","TBD"],["QF","TBD"],["R16","TBD"],["R32","8 matches"]].map(([label,sub],i)=>(
+          <div key={i} style={{flex:i===4?1.5:1,textAlign:"center"}}>
+            <div style={{fontFamily:"monospace",fontSize:9,letterSpacing:"0.15em",color:label?t.gold:t.textMuted,textTransform:"uppercase"}}>{label}</div>
+            <div style={{fontFamily:"monospace",fontSize:8,color:t.textDim}}>{sub}</div>
+          </div>
         ))}
       </div>
 
-      {/* Bracket layout */}
+      {/* Bracket */}
       <div style={{overflowX:"auto",paddingBottom:16}}>
-        <div style={{display:"flex",alignItems:"flex-start",gap:0,minWidth:"max-content"}}>
-
-          {/* LEFT SIDE — progresses right toward center */}
-          <div style={{display:"flex",flexDirection:"row",alignItems:"flex-start"}}>
-            {[leftR32,leftR16,leftQF,leftSF].map((roundMatches,ri)=>{
-              const MATCH_H=52, GAP=8;
-              const gapV=GAP*Math.pow(2,ri);
-              const paddingTop=ri===0?0:gapV/2;
-              return(
-                <div key={ri} style={{display:"flex",flexDirection:"row",alignItems:"flex-start"}}>
-                  <div style={{display:"flex",flexDirection:"column",gap:gapV,paddingTop}}>
-                    {roundMatches.map((match,mi)=>(
-                      <BracketMatchBox key={mi} match={match} expanded={expandedMatch===match} onExpand={handleExpand}/>
-                    ))}
-                  </div>
-                  {ri<3&&(
-                    <svg width={28} height={(MATCH_H+gapV)*roundMatches.length-gapV+paddingTop*2} style={{flexShrink:0}}>
-                      {Array.from({length:roundMatches.length/2},(_, i)=>{
-                        const yTop=paddingTop+i*2*(MATCH_H+gapV)+MATCH_H/2;
-                        const yBot=paddingTop+(i*2+1)*(MATCH_H+gapV)+MATCH_H/2;
-                        const yMid=(yTop+yBot)/2;
-                        const c=t.dark?"rgba(201,168,76,0.3)":"rgba(160,120,30,0.25)";
-                        return[
-                          <line key={`a${i}`} x1={0} y1={yTop} x2={14} y2={yTop} stroke={c} strokeWidth={1.5}/>,
-                          <line key={`b${i}`} x1={0} y1={yBot} x2={14} y2={yBot} stroke={c} strokeWidth={1.5}/>,
-                          <line key={`c${i}`} x1={14} y1={yTop} x2={14} y2={yBot} stroke={c} strokeWidth={1.5}/>,
-                          <line key={`d${i}`} x1={14} y1={yMid} x2={28} y2={yMid} stroke={c} strokeWidth={1.5}/>,
-                        ];
-                      })}
-                    </svg>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        <div style={{display:"flex",alignItems:"flex-start",minWidth:"max-content",gap:0}}>
+          {/* LEFT HALF */}
+          <HalfBracket dir="left" rounds={[leftR32,leftR16,leftQF,leftSF]}/>
 
           {/* FINAL — center */}
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",paddingTop: (52+8)*7 + 52/2 - 52/2, minWidth:200,margin:"0 16px"}}>
-            <div style={{fontFamily:"monospace",fontSize:9,letterSpacing:"0.2em",color:t.gold,textTransform:"uppercase",marginBottom:8,whiteSpace:"nowrap"}}>⚽ FINAL · Jul 19</div>
-            {fin[0]&&(
-              <div style={{width:"100%"}}>
-                <BracketMatchBox match={fin[0]} expanded={expandedMatch===fin[0]} onExpand={handleExpand}/>
-              </div>
-            )}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",
+            paddingTop:(MATCH_H+GAP)*7+MATCH_H/2-MATCH_H/2,
+            minWidth:190,margin:"0 8px"}}>
+            <div style={{fontFamily:"monospace",fontSize:9,letterSpacing:"0.2em",color:t.gold,textTransform:"uppercase",marginBottom:6,whiteSpace:"nowrap",textAlign:"center"}}>⚽ FINAL<br/>Jul 19 · MetLife</div>
+            <BracketMatchBox match={null} expanded={false} onExpand={()=>{}}/>
           </div>
 
-          {/* RIGHT SIDE — progresses left toward center (reversed) */}
-          <div style={{display:"flex",flexDirection:"row-reverse",alignItems:"flex-start"}}>
-            {[rightR32,rightR16,rightQF,rightSF].map((roundMatches,ri)=>{
-              const MATCH_H=52, GAP=8;
-              const gapV=GAP*Math.pow(2,ri);
-              const paddingTop=ri===0?0:gapV/2;
-              return(
-                <div key={ri} style={{display:"flex",flexDirection:"row-reverse",alignItems:"flex-start"}}>
-                  <div style={{display:"flex",flexDirection:"column",gap:gapV,paddingTop}}>
-                    {roundMatches.map((match,mi)=>(
-                      <BracketMatchBox key={mi} match={match} expanded={expandedMatch===match} onExpand={handleExpand}/>
-                    ))}
-                  </div>
-                  {ri<3&&(
-                    <svg width={28} height={(MATCH_H+gapV)*roundMatches.length-gapV+paddingTop*2} style={{flexShrink:0}}>
-                      {Array.from({length:roundMatches.length/2},(_,i)=>{
-                        const yTop=paddingTop+i*2*(MATCH_H+gapV)+MATCH_H/2;
-                        const yBot=paddingTop+(i*2+1)*(MATCH_H+gapV)+MATCH_H/2;
-                        const yMid=(yTop+yBot)/2;
-                        const c=t.dark?"rgba(201,168,76,0.3)":"rgba(160,120,30,0.25)";
-                        return[
-                          <line key={`a${i}`} x1={28} y1={yTop} x2={14} y2={yTop} stroke={c} strokeWidth={1.5}/>,
-                          <line key={`b${i}`} x1={28} y1={yBot} x2={14} y2={yBot} stroke={c} strokeWidth={1.5}/>,
-                          <line key={`c${i}`} x1={14} y1={yTop} x2={14} y2={yBot} stroke={c} strokeWidth={1.5}/>,
-                          <line key={`d${i}`} x1={14} y1={yMid} x2={0}  y2={yMid} stroke={c} strokeWidth={1.5}/>,
-                        ];
-                      })}
-                    </svg>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {/* RIGHT HALF */}
+          <HalfBracket dir="right" rounds={[rightR32,rightR16,rightQF,rightSF]}/>
         </div>
       </div>
 
       {/* Match detail panel */}
       {expandedMatch&&<MatchDetail match={expandedMatch} onClose={()=>setExpandedMatch(null)}/>}
 
-      {/* All matchups list */}
+      {/* Full R32 list with rankings */}
       <div style={{marginTop:32}}>
-        <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.2em",color:t.textMuted,textTransform:"uppercase",marginBottom:16,paddingBottom:8,borderBottom:`1px solid ${t.border}`}}>All Matchup Details</div>
-        {bracket.map((round,ri)=>(
-          <div key={ri} style={{marginBottom:28}}>
-            <div style={{fontFamily:"monospace",fontSize:10,letterSpacing:"0.25em",color:t.gold,textTransform:"uppercase",marginBottom:10,paddingBottom:6,borderBottom:`1px solid ${t.borderGold}`}}>{round.round}</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:8}}>
-              {round.matches.map((match,mi)=>(
-                <div key={mi} style={{background:t.surface,border:`1px solid ${expandedMatch===match?t.gold:t.border}`,borderRadius:4,overflow:"hidden",cursor:"pointer"}} onClick={()=>handleExpand(match)}>
-                  <BracketTeamRow team={match.a} isWinner={match.winner===match.a.name} isLoser={match.winner&&match.winner!==match.a.name}/>
-                  <div style={{height:1,background:t.border}}/>
-                  <BracketTeamRow team={match.b} isWinner={match.winner===match.b.name} isLoser={match.winner&&match.winner!==match.b.name}/>
-                  {expandedMatch===match&&match.rat&&(
-                    <div style={{padding:"10px",background:t.dark?"rgba(0,0,0,0.3)":"rgba(0,0,0,0.03)",borderTop:`1px solid ${t.border}`}}>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-                        <div><div style={{fontSize:9,fontFamily:"monospace",color:t.green,marginBottom:3}}>{match.a.name.toUpperCase()}</div><div style={{fontSize:11,color:t.textMuted,lineHeight:1.4}}>{match.aS}</div></div>
-                        <div><div style={{fontSize:9,fontFamily:"monospace",color:t.red,marginBottom:3}}>{match.b.name.toUpperCase()}</div><div style={{fontSize:11,color:t.textMuted,lineHeight:1.4}}>{match.bS}</div></div>
-                      </div>
-                      <div style={{padding:"7px 10px",background:t.dark?"rgba(201,168,76,0.07)":"rgba(160,120,30,0.05)",borderRadius:3,fontSize:11,color:t.textMuted,lineHeight:1.5}}><span style={{color:t.gold,fontFamily:"monospace",fontSize:9}}>VERDICT: </span>{match.rat}</div>
-                    </div>
-                  )}
+        <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.2em",color:t.textMuted,textTransform:"uppercase",marginBottom:16,paddingBottom:8,borderBottom:`1px solid ${t.border}`}}>
+          All 16 Round of 32 Matchups — Ranked #1 vs #32 through #16 vs #17
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:8}}>
+          {r32Matches.map((match,mi)=>(
+            <div key={mi} style={{background:t.surface,border:`1px solid ${expandedMatch===match?t.gold:t.border}`,borderRadius:4,overflow:"hidden",cursor:"pointer"}} onClick={()=>handleExpand(match)}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 10px",background:t.dark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.02)",borderBottom:`1px solid ${t.border}`}}>
+                <span style={{fontFamily:"monospace",fontSize:9,color:t.textMuted}}>MATCH {mi+1}</span>
+                <span style={{fontFamily:"monospace",fontSize:9,color:t.gold}}>#{match.rankA} vs #{match.rankB}</span>
+              </div>
+              <BracketTeamRow team={match.a} isWinner={false} isLoser={false}/>
+              <div style={{height:1,background:t.border}}/>
+              <BracketTeamRow team={match.b} isWinner={false} isLoser={false}/>
+              {expandedMatch===match&&(
+                <div style={{padding:"10px",background:t.dark?"rgba(0,0,0,0.3)":"rgba(0,0,0,0.03)",borderTop:`1px solid ${t.border}`}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                    <div><div style={{fontSize:9,fontFamily:"monospace",color:t.green,marginBottom:3}}>{match.a.name.toUpperCase()}</div><div style={{fontSize:11,color:t.textMuted,lineHeight:1.4}}>{match.aS}</div></div>
+                    <div><div style={{fontSize:9,fontFamily:"monospace",color:t.red,marginBottom:3}}>{match.b.name.toUpperCase()}</div><div style={{fontSize:11,color:t.textMuted,lineHeight:1.4}}>{match.bS}</div></div>
+                  </div>
+                  <div style={{padding:"7px 10px",background:t.dark?"rgba(201,168,76,0.07)":"rgba(160,120,30,0.05)",borderRadius:3,fontSize:11,color:t.textMuted,lineHeight:1.5}}>
+                    <span style={{color:t.gold,fontFamily:"monospace",fontSize:9}}>VERDICT: </span>{match.rat}
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
 }
+
 
 // ── GROUP MATCH CARD ──────────────────────────────────────────────────────────
 function GroupMatchCard({match, groupName}){
@@ -628,7 +644,10 @@ function GroupMatchCard({match, groupName}){
       <div style={{padding:"8px 12px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
           <span style={{fontSize:10,fontFamily:"monospace",color:t.textMuted}}>{match.date} · Group {groupName}</span>
-          <span style={{fontSize:10,fontFamily:"monospace",color:t.textMuted}}>{open?"▲":"▼"}</span>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {match.score&&<span style={{fontFamily:"monospace",fontSize:11,fontWeight:700,color:t.gold,background:t.dark?"rgba(201,168,76,0.12)":"rgba(160,120,30,0.1)",padding:"1px 8px",borderRadius:2}}>{match.score[0]}–{match.score[1]}</span>}
+            <span style={{fontSize:10,fontFamily:"monospace",color:t.textMuted}}>{open?"▲":"▼"}</span>
+          </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 80px 1fr",alignItems:"center",gap:8}}>
           <div style={{textAlign:"right"}}>
@@ -690,7 +709,7 @@ function GroupMatchCard({match, groupName}){
 }
 
 // ── PREDICTIONS TAB ───────────────────────────────────────────────────────────
-function PredictionsTab({bracket}){
+function PredictionsTab({r32Matches}){
   const t=useTheme();
   const [section,setSection]=useState("group");
   const [activeGroup,setActiveGroup]=useState("A");
@@ -705,7 +724,7 @@ function PredictionsTab({bracket}){
       {section==="group"&&(
         <div>
           <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.2em",color:t.gold,textTransform:"uppercase",marginBottom:6}}>Group Stage — All 72 Matches Predicted</div>
-          <div style={{fontSize:13,color:t.textMuted,marginBottom:16,maxWidth:700}}>Each match includes predicted lineups, key substitutions, team morale, and an analytical verdict. Win probabilities update when confirmed lineups are available.</div>
+          <div style={{fontSize:13,color:t.textMuted,marginBottom:16,maxWidth:700}}>Each match includes predicted score, lineups, key substitutions, team morale, and an analytical verdict. Win probabilities update when confirmed lineups are available.</div>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:16}}>
             {groups.map(g=>(
               <button key={g} onClick={()=>setActiveGroup(g)} style={{background:activeGroup===g?t.dark?"rgba(201,168,76,0.2)":"rgba(160,120,30,0.12)":t.inputBg,border:`1px solid ${activeGroup===g?t.gold:t.border}`,borderRadius:3,padding:"4px 12px",fontSize:11,fontFamily:"monospace",color:activeGroup===g?t.gold:t.textMuted,cursor:"pointer"}}>Group {g}</button>
@@ -718,7 +737,7 @@ function PredictionsTab({bracket}){
           </div>
         </div>
       )}
-      {section==="knockout"&&<TwoSidedBracket bracket={bracket}/>}
+      {section==="knockout"&&<TwoSidedBracket r32Matches={r32Matches}/>}
     </div>
   );
 }
@@ -1121,7 +1140,7 @@ export default function App(){
       <div style={{display:"flex",flex:1,overflow:"hidden",minHeight:0}}>
         <div style={{flex:1,overflowY:"auto",padding:"32px 24px"}}>
           {activeTab==="Overview"&&<OverviewTab teams={teams}/>}
-          {activeTab==="Predictions"&&<PredictionsTab bracket={PREDICTED_KNOCKOUT}/>}
+          {activeTab==="Predictions"&&<PredictionsTab r32Matches={R32_MATCHES}/>}
           {activeTab==="Groups"&&<GroupsTab groups={INITIAL_GROUPS}/>}
           {activeTab==="Players"&&<PlayersTab players={players}/>}
           {activeTab==="Analysis"&&<AnalysisTab/>}

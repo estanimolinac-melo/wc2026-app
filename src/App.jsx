@@ -550,15 +550,17 @@ function TwoSidedBracket(){
         Balanced draw: 1st-place teams alternated left/right. All 5 rounds predicted with scorelines and analysis. Click any matchup to expand. Predicted winner: <strong style={{color:t.gold}}>France 🇫🇷</strong>
       </div>
 
-      {/* Round header labels */}
-      <div style={{display:"flex",gap:0,marginBottom:10,paddingBottom:6,borderBottom:`1px solid ${t.borderGold}`}}>
-        {[["R32",BOX_W],["",CONN_W],["R16",BOX_W],["",CONN_W],["QF",BOX_W],["",CONN_W],["SF",BOX_W],["",CONN_W],["FINAL",BOX_W],["",CONN_W],["SF",BOX_W],["",CONN_W],["QF",BOX_W],["",CONN_W],["R16",BOX_W],["",CONN_W],["R32",BOX_W]].map(([l,w],i)=>(
-          <div key={i} style={{width:w,flexShrink:0,textAlign:"center",fontFamily:"monospace",fontSize:8,letterSpacing:"0.12em",color:l?t.gold:t.textDim,textTransform:"uppercase"}}>{l}</div>
-        ))}
-      </div>
-
       <div style={{overflowX:"auto",paddingBottom:16}}>
-        <div style={{display:"flex",alignItems:"flex-start",minWidth:"max-content",gap:0}}>
+        <div style={{display:"flex",flexDirection:"column",minWidth:"max-content"}}>
+
+          {/* Round header labels — scrolls together with the bracket below */}
+          <div style={{display:"flex",gap:0,marginBottom:10,paddingBottom:6,borderBottom:`1px solid ${t.borderGold}`}}>
+            {[["R32",BOX_W],["",CONN_W],["R16",BOX_W],["",CONN_W],["QF",BOX_W],["",CONN_W],["SF",BOX_W],["",CONN_W],["FINAL",BOX_W],["",CONN_W],["SF",BOX_W],["",CONN_W],["QF",BOX_W],["",CONN_W],["R16",BOX_W],["",CONN_W],["R32",BOX_W]].map(([l,w],i)=>(
+              <div key={i} style={{width:w,flexShrink:0,textAlign:"center",fontFamily:"monospace",fontSize:8,letterSpacing:"0.12em",color:l?t.gold:t.textDim,textTransform:"uppercase"}}>{l}</div>
+            ))}
+          </div>
+
+          <div style={{display:"flex",alignItems:"flex-start",gap:0}}>
 
           {/* LEFT HALF — R32→R16→QF→SF, progressing rightward */}
           <RoundCol matches={leftR32} n={8} round={0}/>
@@ -592,6 +594,7 @@ function TwoSidedBracket(){
           <RoundCol matches={rightR16} n={4} round={1}/>
           <Connector n={8} round={0} dir="R"/>
           <RoundCol matches={rightR32} n={8} round={0}/>
+          </div>
         </div>
       </div>
 

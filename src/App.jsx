@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, createContext, useContext } from "react";
-import { Flag, INITIAL_TEAMS, INITIAL_PLAYERS, INFLUENTIAL_NON_TOP50, FACTOR_WEIGHTS, MATCH_FACTORS, INITIAL_GROUPS, GROUP_MATCH_PREDICTIONS, FIFA_RANK, computeGroupStandings, BRACKET_PREDICTIONS, RECENT_FRIENDLIES } from "./data.jsx";
+import { Flag, INITIAL_TEAMS, INITIAL_PLAYERS, INFLUENTIAL_NON_TOP50, FACTOR_WEIGHTS, MATCH_FACTORS, INITIAL_GROUPS, GROUP_MATCH_PREDICTIONS, FIFA_RANK, computeGroupStandings, BRACKET_PREDICTIONS, RECENT_FRIENDLIES, LIVE_RESULTS, DAY1_STANDOUTS } from "./data.jsx";
 
 // ── COMPUTE STANDINGS ONCE ────────────────────────────────────────────────────
 const { teamStats: TEAM_STATS, groupedStandings: GROUPED_STANDINGS } = computeGroupStandings();
@@ -449,96 +449,99 @@ function TwoSidedBracket(){
   const rightSF  = bp.sf.filter(m=>m.side==="R");   // 1 match
   const final    = bp.final[0];
 
-  const MATCH_H=54, GAP=8;
-  const c_line=t.dark?"rgba(201,168,76,0.35)":"rgba(160,120,30,0.3)";
+  // Every match box (including TBD placeholders) has the SAME total height,
+  // so connector geometry is purely arithmetic.
+  const BOX_H=68;   // total box height including score bar
+  const GAP=12;     // vertical gap between boxes in R32 column
+  const BOX_W=188;
+  const CONN_W=24;  // width of each connector svg
+  const c_line=t.dark?"rgba(201,168,76,0.4)":"rgba(160,120,30,0.35)";
 
   function MatchBox({match, id}){
     if(!match) return(
-      <div style={{width:188,height:MATCH_H,background:t.dark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.03)",border:`1px dashed ${t.border}`,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{width:BOX_W,height:BOX_H,background:t.dark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.03)",border:`1px dashed ${t.border}`,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",boxSizing:"border-box"}}>
         <span style={{fontSize:10,color:t.textDim,fontFamily:"monospace"}}>TBD</span>
       </div>
     );
     const open=expandedId===id;
     const aWin=match.winner===match.a.name, bWin=match.winner===match.b.name;
     return(
-      <div style={{width:188,background:t.surface,border:`1px solid ${open?t.gold:t.border}`,borderRadius:4,overflow:"hidden",cursor:"pointer",transition:"border-color 0.15s"}} onClick={()=>setExpandedId(open?null:id)}>
-        <div style={{display:"flex",alignItems:"center",gap:5,padding:"5px 8px",background:aWin?t.dark?"rgba(201,168,76,0.1)":"rgba(160,120,30,0.07)":"transparent",borderBottom:`1px solid ${t.border}`}}>
+      <div style={{width:BOX_W,height:BOX_H,background:t.surface,border:`1px solid ${open?t.gold:t.border}`,borderRadius:4,overflow:"hidden",cursor:"pointer",transition:"border-color 0.15s",boxSizing:"border-box",display:"flex",flexDirection:"column"}} onClick={()=>setExpandedId(open?null:id)}>
+        <div style={{display:"flex",alignItems:"center",gap:5,padding:"5px 8px",flex:1,background:aWin?t.dark?"rgba(201,168,76,0.1)":"rgba(160,120,30,0.07)":"transparent",borderBottom:`1px solid ${t.border}`}}>
           <Flag id={match.a.id} size={13} style={{borderRadius:2,flexShrink:0,opacity:bWin?0.4:1}}/>
           <span style={{flex:1,fontSize:11,fontWeight:aWin?700:400,color:aWin?t.gold:bWin?t.textDim:t.text,textDecoration:bWin?"line-through":"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{match.a.name}</span>
           <span style={{fontFamily:"monospace",fontSize:10,color:aWin?t.gold:t.textDim,flexShrink:0}}>{match.aProb}%</span>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:5,padding:"5px 8px",background:bWin?t.dark?"rgba(201,168,76,0.1)":"rgba(160,120,30,0.07)":"transparent"}}>
+        <div style={{display:"flex",alignItems:"center",gap:5,padding:"5px 8px",flex:1,background:bWin?t.dark?"rgba(201,168,76,0.1)":"rgba(160,120,30,0.07)":"transparent"}}>
           <Flag id={match.b.id} size={13} style={{borderRadius:2,flexShrink:0,opacity:aWin?0.4:1}}/>
           <span style={{flex:1,fontSize:11,fontWeight:bWin?700:400,color:bWin?t.gold:aWin?t.textDim:t.text,textDecoration:aWin?"line-through":"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{match.b.name}</span>
           <span style={{fontFamily:"monospace",fontSize:10,color:bWin?t.gold:t.textDim,flexShrink:0}}>{match.bProb}%</span>
         </div>
-        {match.score&&(
-          <div style={{display:"flex",justifyContent:"center",padding:"2px 0",background:t.dark?"rgba(201,168,76,0.06)":"rgba(160,120,30,0.05)",borderTop:`1px solid ${t.border}`}}>
-            <span style={{fontFamily:"monospace",fontSize:10,fontWeight:700,color:t.gold}}>{match.score}</span>
+        <div style={{display:"flex",justifyContent:"center",alignItems:"center",height:20,background:t.dark?"rgba(201,168,76,0.06)":"rgba(160,120,30,0.05)",borderTop:`1px solid ${t.border}`}}>
+          <span style={{fontFamily:"monospace",fontSize:10,fontWeight:700,color:t.gold}}>{match.score||"—"}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── GEOMETRY ──────────────────────────────────────────────────────────────
+  // roundGap(r) = vertical gap between boxes in round r (r=0 is R32)
+  // Each round has half as many boxes as the previous, each centered between
+  // its two "parent" boxes from the previous round.
+  // boxesHeight(r, n) = total height spanned by n boxes in round r
+  const gapAt=(r)=> GAP*Math.pow(2,r) + (Math.pow(2,r)-1)*BOX_H*0; // gaps scale geometrically
+  // Simplify: define slot height for round r = (BOX_H+GAP)*2^r - GAP
+  // i.e. the vertical space "owned" by one box in round r equals the combined
+  // height+gap of 2^r boxes from round 0.
+  const slot=(r)=>(BOX_H+GAP)*Math.pow(2,r);
+  // padTop for round r = half a slot, minus half a box (centers box in its slot), minus the base gap row
+  const padTop=(r)=> r===0 ? 0 : slot(r)/2 - BOX_H/2 - GAP/2;
+
+  function RoundCol({matches, n, round}){
+    const pt=padTop(round);
+    const gp=round===0?GAP:slot(round)-BOX_H;
+    return(
+      <div style={{display:"flex",flexDirection:"column",paddingTop:pt}}>
+        {Array.from({length:n},(_,i)=>(
+          <div key={i} style={{marginBottom:i<n-1?gp:0}}>
+            <MatchBox match={matches[i]||null} id={matches[i]?`${matches[i].a.id}-${matches[i].b.id}-${round}-${i}`:null}/>
           </div>
-        )}
+        ))}
       </div>
     );
   }
 
-  // Draw connector SVG between rounds — left side (right-facing connectors)
-  function ConnL({n, matchH, gapV, padTop}){
-    const totalH=(matchH+gapV)*n-gapV;
-    const scoreH=match=>match?14:0; // score bar height
-    const h=totalH+padTop*2;
+  // Connector between round `round` (n boxes) and round `round+1` (n/2 boxes)
+  // dir: "L" = lines exit right side of boxes, "R" = lines exit left side
+  function Connector({n, round, dir}){
+    const pt=padTop(round);
+    const gp=round===0?GAP:slot(round)-BOX_H;
+    const totalH=pt*2 + n*BOX_H + (n-1)*gp;
+    const lines=[];
+    for(let i=0;i<n/2;i++){
+      const yTop = pt + (2*i)*(BOX_H+gp) + BOX_H/2;
+      const yBot = pt + (2*i+1)*(BOX_H+gp) + BOX_H/2;
+      const yMid = (yTop+yBot)/2;
+      if(dir==="L"){
+        // exits right edge (x=0 of this svg) -> goes to x=CONN_W/2 -> vertical join -> horizontal to x=CONN_W (left edge of next box)
+        lines.push(<line key={`a${i}`} x1={0} y1={yTop} x2={CONN_W/2} y2={yTop} stroke={c_line} strokeWidth={1.5}/>);
+        lines.push(<line key={`b${i}`} x1={0} y1={yBot} x2={CONN_W/2} y2={yBot} stroke={c_line} strokeWidth={1.5}/>);
+        lines.push(<line key={`c${i}`} x1={CONN_W/2} y1={yTop} x2={CONN_W/2} y2={yBot} stroke={c_line} strokeWidth={1.5}/>);
+        lines.push(<line key={`d${i}`} x1={CONN_W/2} y1={yMid} x2={CONN_W} y2={yMid} stroke={c_line} strokeWidth={1.5}/>);
+      } else {
+        // mirror: exits left edge (x=CONN_W) -> x=CONN_W/2 -> vertical join -> horizontal to x=0 (right edge of next box)
+        lines.push(<line key={`a${i}`} x1={CONN_W} y1={yTop} x2={CONN_W/2} y2={yTop} stroke={c_line} strokeWidth={1.5}/>);
+        lines.push(<line key={`b${i}`} x1={CONN_W} y1={yBot} x2={CONN_W/2} y2={yBot} stroke={c_line} strokeWidth={1.5}/>);
+        lines.push(<line key={`c${i}`} x1={CONN_W/2} y1={yTop} x2={CONN_W/2} y2={yBot} stroke={c_line} strokeWidth={1.5}/>);
+        lines.push(<line key={`d${i}`} x1={CONN_W/2} y1={yMid} x2={0} y2={yMid} stroke={c_line} strokeWidth={1.5}/>);
+      }
+    }
     return(
-      <svg width={24} height={Math.max(h,1)} style={{flexShrink:0,overflow:"visible",alignSelf:"flex-start"}}>
-        {Array.from({length:n/2},(_,i)=>{
-          const yTop=padTop+i*2*(matchH+gapV)+matchH/2+7;
-          const yBot=padTop+(i*2+1)*(matchH+gapV)+matchH/2+7;
-          const yMid=(yTop+yBot)/2;
-          return[
-            <line key={`a${i}`} x1={0} y1={yTop} x2={12} y2={yTop} stroke={c_line} strokeWidth={1.5}/>,
-            <line key={`b${i}`} x1={0} y1={yBot} x2={12} y2={yBot} stroke={c_line} strokeWidth={1.5}/>,
-            <line key={`c${i}`} x1={12} y1={yTop} x2={12} y2={yBot} stroke={c_line} strokeWidth={1.5}/>,
-            <line key={`d${i}`} x1={12} y1={yMid} x2={24} y2={yMid} stroke={c_line} strokeWidth={1.5}/>,
-          ];
-        })}
+      <svg width={CONN_W} height={Math.max(totalH,1)} style={{flexShrink:0,overflow:"visible"}}>
+        {lines}
       </svg>
     );
   }
-
-  // Right side (left-facing connectors)
-  function ConnR({n, matchH, gapV, padTop}){
-    const totalH=(matchH+gapV)*n-gapV;
-    const h=totalH+padTop*2;
-    return(
-      <svg width={24} height={Math.max(h,1)} style={{flexShrink:0,overflow:"visible",alignSelf:"flex-start"}}>
-        {Array.from({length:n/2},(_,i)=>{
-          const yTop=padTop+i*2*(matchH+gapV)+matchH/2+7;
-          const yBot=padTop+(i*2+1)*(matchH+gapV)+matchH/2+7;
-          const yMid=(yTop+yBot)/2;
-          return[
-            <line key={`a${i}`} x1={24} y1={yTop} x2={12} y2={yTop} stroke={c_line} strokeWidth={1.5}/>,
-            <line key={`b${i}`} x1={24} y1={yBot} x2={12} y2={yBot} stroke={c_line} strokeWidth={1.5}/>,
-            <line key={`c${i}`} x1={12} y1={yTop} x2={12} y2={yBot} stroke={c_line} strokeWidth={1.5}/>,
-            <line key={`d${i}`} x1={12} y1={yMid} x2={0}  y2={yMid} stroke={c_line} strokeWidth={1.5}/>,
-          ];
-        })}
-      </svg>
-    );
-  }
-
-  function RoundCol({matches, ids, padTop}){
-    const gapV=GAP;
-    return(
-      <div style={{display:"flex",flexDirection:"column",gap:gapV,paddingTop:padTop||0}}>
-        {matches.map((m,i)=><MatchBox key={i} match={m} id={ids?ids[i]:`${m?.a?.id||"x"}-${m?.b?.id||"y"}-${i}`}/>)}
-      </div>
-    );
-  }
-
-  // Calculate padding so each successive round's matches center on their pair from the previous round
-  const pad=(round)=>round===0?0:(GAP+MATCH_H+14)*Math.pow(2,round-1)-MATCH_H/2-7;
-
-  const roundLabel=(label)=>(
-    <div style={{fontFamily:"monospace",fontSize:9,letterSpacing:"0.15em",color:t.gold,textTransform:"uppercase",textAlign:"center",padding:"3px 0",borderBottom:`1px solid ${t.borderGold}`,marginBottom:6}}>{label}</div>
-  );
 
   return(
     <div>
@@ -549,7 +552,7 @@ function TwoSidedBracket(){
 
       {/* Round header labels */}
       <div style={{display:"flex",gap:0,marginBottom:10,paddingBottom:6,borderBottom:`1px solid ${t.borderGold}`}}>
-        {[["R32",188],["",24],["R16",188],["",24],["QF",188],["",24],["SF",188],["",32],["FINAL",190],["",32],["SF",188],["",24],["QF",188],["",24],["R16",188],["",24],["R32",188]].map(([l,w],i)=>(
+        {[["R32",BOX_W],["",CONN_W],["R16",BOX_W],["",CONN_W],["QF",BOX_W],["",CONN_W],["SF",BOX_W],["",CONN_W],["FINAL",BOX_W],["",CONN_W],["SF",BOX_W],["",CONN_W],["QF",BOX_W],["",CONN_W],["R16",BOX_W],["",CONN_W],["R32",BOX_W]].map(([l,w],i)=>(
           <div key={i} style={{width:w,flexShrink:0,textAlign:"center",fontFamily:"monospace",fontSize:8,letterSpacing:"0.12em",color:l?t.gold:t.textDim,textTransform:"uppercase"}}>{l}</div>
         ))}
       </div>
@@ -558,24 +561,20 @@ function TwoSidedBracket(){
         <div style={{display:"flex",alignItems:"flex-start",minWidth:"max-content",gap:0}}>
 
           {/* LEFT HALF — R32→R16→QF→SF, progressing rightward */}
-          <RoundCol matches={leftR32} padTop={0}/>
-          <ConnL n={8} matchH={MATCH_H+14} gapV={GAP} padTop={0}/>
-          <RoundCol matches={leftR16} padTop={pad(1)}/>
-          <ConnL n={4} matchH={MATCH_H+14} gapV={GAP} padTop={pad(1)}/>
-          <RoundCol matches={leftQF}  padTop={pad(2)}/>
-          <ConnL n={2} matchH={MATCH_H+14} gapV={GAP} padTop={pad(2)}/>
-          <RoundCol matches={leftSF}  padTop={pad(3)}/>
-          {/* SF→Final connector */}
-          <svg width={32} height={(MATCH_H+14)*16+GAP*15} style={{flexShrink:0,overflow:"visible"}}>
-            <line x1={0} y1={pad(3)+(MATCH_H+14)/2} x2={32} y2={(MATCH_H+14)*8+GAP*7} stroke={c_line} strokeWidth={1.5}/>
-          </svg>
+          <RoundCol matches={leftR32} n={8} round={0}/>
+          <Connector n={8} round={0} dir="L"/>
+          <RoundCol matches={leftR16} n={4} round={1}/>
+          <Connector n={4} round={1} dir="L"/>
+          <RoundCol matches={leftQF}  n={2} round={2}/>
+          <Connector n={2} round={2} dir="L"/>
+          <RoundCol matches={leftSF}  n={1} round={3}/>
+          <Connector n={1} round={3} dir="L"/>
 
-          {/* FINAL — center */}
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minWidth:190,paddingTop:pad(3)+(MATCH_H+14)/2-MATCH_H/2-7}}>
-            <div style={{fontFamily:"monospace",fontSize:9,letterSpacing:"0.15em",color:t.gold,textTransform:"uppercase",marginBottom:6,whiteSpace:"nowrap",textAlign:"center"}}>⚽ FINAL · Jul 19<br/>MetLife Stadium</div>
+          {/* FINAL — centered exactly between the two SF connectors */}
+          <div style={{paddingTop:padTop(4)}}>
             <MatchBox match={final} id="final"/>
             {final&&(
-              <div style={{marginTop:8,width:188,padding:"6px 10px",background:t.dark?"rgba(201,168,76,0.08)":"rgba(160,120,30,0.06)",border:`1px solid ${t.borderGold}`,borderRadius:4,textAlign:"center"}}>
+              <div style={{marginTop:8,width:BOX_W,padding:"6px 10px",background:t.dark?"rgba(201,168,76,0.08)":"rgba(160,120,30,0.06)",border:`1px solid ${t.borderGold}`,borderRadius:4,textAlign:"center"}}>
                 <div style={{fontSize:9,fontFamily:"monospace",color:t.gold,marginBottom:3}}>🏆 CHAMPION</div>
                 <div style={{fontSize:12,fontWeight:700,color:t.text}}>{final.winner}</div>
                 <div style={{fontSize:9,color:t.textMuted,marginTop:4}}>🥅 {final.goldenBoot}</div>
@@ -584,27 +583,29 @@ function TwoSidedBracket(){
             )}
           </div>
 
-          {/* SF→Final connector right */}
-          <svg width={32} height={(MATCH_H+14)*16+GAP*15} style={{flexShrink:0,overflow:"visible"}}>
-            <line x1={32} y1={pad(3)+(MATCH_H+14)/2} x2={0} y2={(MATCH_H+14)*8+GAP*7} stroke={c_line} strokeWidth={1.5}/>
-          </svg>
-
-          {/* RIGHT HALF — SF←QF←R16←R32, reading right-to-left */}
-          <RoundCol matches={rightSF}  padTop={pad(3)}/>
-          <ConnR n={2} matchH={MATCH_H+14} gapV={GAP} padTop={pad(3)}/>
-          <RoundCol matches={rightQF}  padTop={pad(2)}/>
-          <ConnR n={4} matchH={MATCH_H+14} gapV={GAP} padTop={pad(2)}/>
-          <RoundCol matches={rightR16} padTop={pad(1)}/>
-          <ConnR n={8} matchH={MATCH_H+14} gapV={GAP} padTop={pad(1)}/>
-          <RoundCol matches={rightR32} padTop={0}/>
+          {/* RIGHT HALF — SF←QF←R16←R32, mirrored */}
+          <Connector n={1} round={3} dir="R"/>
+          <RoundCol matches={rightSF}  n={1} round={3}/>
+          <Connector n={2} round={2} dir="R"/>
+          <RoundCol matches={rightQF}  n={2} round={2}/>
+          <Connector n={4} round={1} dir="R"/>
+          <RoundCol matches={rightR16} n={4} round={1}/>
+          <Connector n={8} round={0} dir="R"/>
+          <RoundCol matches={rightR32} n={8} round={0}/>
         </div>
       </div>
 
       {/* Expanded match detail */}
       {expandedId&&(()=>{
         const allMatches=[...bp.r32,...bp.r16,...bp.qf,...bp.sf,...bp.final];
-        const match=allMatches.find(m=>`${m?.a?.id||"x"}-${m?.b?.id||"y"}`===expandedId.replace(/-\d+$/,"")||expandedId==="final");
-        const m=expandedId==="final"?final:match;
+        let m=null;
+        if(expandedId==="final"){
+          m=final;
+        }else{
+          const parts=expandedId.split("-");
+          const aId=parts[0], bId=parts[1];
+          m=allMatches.find(x=>x.a.id===aId&&x.b.id===bId);
+        }
         if(!m) return null;
         return(
           <div style={{marginTop:12,padding:"14px 18px",background:t.dark?"rgba(0,0,0,0.3)":"rgba(0,0,0,0.03)",border:`1px solid ${t.borderGold}`,borderRadius:4}}>
@@ -861,6 +862,34 @@ function PlayersTab({players}){
           The <strong style={{color:t.text}}>top 50 players at the 2026 World Cup</strong>. Statistics update as the tournament progresses from June 11.
         </div>
       </div>
+
+      {/* Day 1 standouts */}
+      <div style={{marginBottom:24}}>
+        <div style={{fontSize:11,fontFamily:"monospace",letterSpacing:"0.25em",color:t.green,textTransform:"uppercase",marginBottom:8}}>⚡ Day 1 Standouts — Jun 11</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:10}}>
+          {DAY1_STANDOUTS.map(p=>(
+            <div key={p.rank} style={{background:t.surface2,border:`1px solid ${t.dark?"rgba(46,204,113,0.25)":"rgba(22,163,74,0.2)"}`,borderRadius:4,padding:"10px 14px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <Flag id={p.natId} size={18} style={{borderRadius:2}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:t.text}}>{p.name}</div>
+                  <div style={{fontSize:10,color:t.textMuted}}>{p.club} · {p.pos}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontFamily:"monospace",fontSize:14,fontWeight:700,color:t.green}}>{p.rating.toFixed(1)}</div>
+                  <div style={{fontSize:9,color:t.textDim,fontFamily:"monospace"}}>{p.mins}'</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10,marginBottom:6,fontSize:11,fontFamily:"monospace"}}>
+                {p.goals>0&&<span style={{color:t.red}}>⚽ {p.goals}</span>}
+                {p.assists>0&&<span style={{color:t.green}}>🎯 {p.assists}</span>}
+              </div>
+              <div style={{fontSize:11,color:t.textMuted,lineHeight:1.5}}>{p.note}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16,alignItems:"center"}}>
         {["ALL","FWD","MID","DEF","GK"].map(pos=>(
           <button key={pos} onClick={()=>setFilterPos(pos)} style={{background:filterPos===pos?(POS_COLORS[pos]||t.gold):t.inputBg,color:filterPos===pos?"#0A0A0F":t.textMuted,border:`1px solid ${filterPos===pos?(POS_COLORS[pos]||t.gold):t.border}`,borderRadius:3,padding:"5px 12px",fontSize:11,fontFamily:"monospace",letterSpacing:"0.1em",cursor:"pointer",fontWeight:600}}>{pos}</button>
@@ -1107,8 +1136,17 @@ export default function App(){
       const res=await fetch(`${BACKEND_URL}/matches`);
       if(!res.ok) throw new Error(`Server error: ${res.status}`);
       const data=await res.json();
-      setMatches((data||[]).sort((a,b)=>new Date(b.fixture?.date||0)-new Date(a.fixture?.date||0)));
-    }catch(e){setMatchesError("Could not reach server.");console.error(e);}
+      const fetchedIds=new Set((data||[]).map(m=>m.fixture?.id));
+      // Supplement with known Day 1 results if backend hasn't cached them yet
+      const supplement=LIVE_RESULTS.filter(m=>!fetchedIds.has(m.fixture?.id));
+      const merged=[...(data||[]),...supplement];
+      setMatches(merged.sort((a,b)=>new Date(b.fixture?.date||0)-new Date(a.fixture?.date||0)));
+    }catch(e){
+      // Backend unreachable — fall back to known Day 1 results so the side panel isn't empty
+      setMatches(LIVE_RESULTS.slice().sort((a,b)=>new Date(b.fixture?.date||0)-new Date(a.fixture?.date||0)));
+      setMatchesError("Could not reach server — showing cached results.");
+      console.error(e);
+    }
     setMatchesLoading(false);
   },[]);
 

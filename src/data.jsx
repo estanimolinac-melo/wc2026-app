@@ -159,7 +159,7 @@ export const INITIAL_TEAMS = [
 ];
 
 export const INITIAL_GROUPS = {
-  A:{ name:"A", teams:[{id:"MEX",flag:"🇲🇽",name:"Mexico",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"KOR",flag:"🇰🇷",name:"South Korea",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"CZE",flag:"🇨🇿",name:"Czechia",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"RSA",flag:"🇿🇦",name:"South Africa",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
+  A:{ name:"A", teams:[{id:"MEX",flag:"🇲🇽",name:"Mexico",w:1,d:0,l:0,gf:2,ga:0,pts:3},{id:"KOR",flag:"🇰🇷",name:"South Korea",w:1,d:0,l:0,gf:2,ga:1,pts:3},{id:"CZE",flag:"🇨🇿",name:"Czechia",w:0,d:0,l:1,gf:1,ga:2,pts:0},{id:"RSA",flag:"🇿🇦",name:"South Africa",w:0,d:0,l:1,gf:0,ga:2,pts:0}]},
   B:{ name:"B", teams:[{id:"CAN",flag:"🇨🇦",name:"Canada",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"SUI",flag:"🇨🇭",name:"Switzerland",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"BIH",flag:"🇧🇦",name:"Bosnia-Herz.",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"QAT",flag:"🇶🇦",name:"Qatar",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
   C:{ name:"C", teams:[{id:"MAR",flag:"🇲🇦",name:"Morocco",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"BRA",flag:"🇧🇷",name:"Brazil",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"SCO",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",name:"Scotland",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"HAI",flag:"🇭🇹",name:"Haiti",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
   D:{ name:"D", teams:[{id:"USA",flag:"🇺🇸",name:"USA",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"TUR",flag:"🇹🇷",name:"Turkey",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"PAR",flag:"🇵🇾",name:"Paraguay",w:0,d:0,l:0,gf:0,ga:0,pts:0},{id:"AUS",flag:"🇦🇺",name:"Australia",w:0,d:0,l:0,gf:0,ga:0,pts:0}]},
@@ -733,6 +733,49 @@ export const RECENT_FRIENDLIES = [
   { date:"Jun 5",  a:"Uruguay",  b:"TBD",         score:"2-0", note:"Uruguay clinical — Valverde ran the show. Núñez scored twice. Bielsa's pressing worked perfectly. Squad energised." },
 ];
 
+// ── TOURNAMENT DAY 1 RESULTS (Jun 11, 2026) ──────────────────────────────────
+// Real World Cup results, formatted to match the api-football /matches response
+// shape so the side panel can render them identically to backend-fetched fixtures.
+// Used as a fallback/supplement if the live backend hasn't cached these yet.
+export const LIVE_RESULTS = [
+  {
+    fixture: { id: 9000001, date: "2026-06-11T19:00:00+00:00", status: { short: "FT", long: "Match Finished" } },
+    league: { id: 1, name: "World Cup", round: "Group Stage - 1" },
+    teams: {
+      home: { id: 2030, name: "Mexico", logo: "https://media.api-sports.io/football/teams/16.png", winner: true },
+      away: { id: 2040, name: "South Africa", logo: "https://media.api-sports.io/football/teams/1530.png", winner: false },
+    },
+    goals: { home: 2, away: 0 },
+    events: [
+      { time:{elapsed:9,extra:null},  type:"Goal", detail:"Normal Goal", team:{id:2030}, player:{name:"J. Quiñones"}, assist:{name:"E. Lira"} },
+      { time:{elapsed:17,extra:null}, type:"Card", detail:"Yellow Card", team:{id:2040}, player:{name:"T. Mokoena"} },
+      { time:{elapsed:23,extra:null}, type:"Card", detail:"Yellow Card", team:{id:2030}, player:{name:"B. Gutiérrez"} },
+      { time:{elapsed:50,extra:null}, type:"Card", detail:"Red Card", team:{id:2040}, player:{name:"S. Sithole"} },
+      { time:{elapsed:63,extra:null}, type:"Goal", detail:"Normal Goal", team:{id:2030}, player:{name:"R. Jiménez"}, assist:{name:"A. Vega"} },
+      { time:{elapsed:76,extra:null}, type:"subst", team:{id:2040}, player:{name:"E. Makgopa"}, assist:{name:"L. Foster"} },
+      { time:{elapsed:77,extra:null}, type:"subst", team:{id:2040}, player:{name:"O. Appollis"}, assist:{name:"A. Modiba"} },
+      { time:{elapsed:79,extra:null}, type:"subst", team:{id:2030}, player:{name:"A. Vega"}, assist:{name:"J. Quiñones"} },
+      { time:{elapsed:84,extra:null}, type:"Card", detail:"Red Card", team:{id:2040}, player:{name:"T. Zwane"} },
+      { time:{elapsed:90,extra:2},    type:"Card", detail:"Red Card", team:{id:2030}, player:{name:"C. Montes"} },
+    ],
+  },
+  {
+    fixture: { id: 9000002, date: "2026-06-12T02:00:00+00:00", status: { short: "FT", long: "Match Finished" } },
+    league: { id: 1, name: "World Cup", round: "Group Stage - 1" },
+    teams: {
+      home: { id: 2050, name: "South Korea", logo: "https://media.api-sports.io/football/teams/17.png", winner: true },
+      away: { id: 2060, name: "Czechia", logo: "https://media.api-sports.io/football/teams/2.png", winner: false },
+    },
+    goals: { home: 2, away: 1 },
+    events: [
+      { time:{elapsed:58,extra:null}, type:"Goal", detail:"Header", team:{id:2060}, player:{name:"V. Křejčí"}, assist:{name:"T. Souček"} },
+      { time:{elapsed:71,extra:null}, type:"Goal", detail:"Normal Goal", team:{id:2050}, player:{name:"Hwang In-beom"}, assist:{name:"Lee Kang-in"} },
+      { time:{elapsed:86,extra:null}, type:"Goal", detail:"Normal Goal", team:{id:2050}, player:{name:"Oh Hyeon-gyu"}, assist:{name:"Hwang In-beom"} },
+      { time:{elapsed:90,extra:4},    type:"Card", detail:"Yellow Card", team:{id:2060}, player:{name:"Lee Gi-hyuk"} },
+    ],
+  },
+];
+
 // ── FULL TOURNAMENT BRACKET PREDICTIONS ──────────────────────────────────────
 // All 5 rounds predicted with scores, analysis, and verdicts
 // R32 derived from group standings; subsequent rounds derived from R32 winners
@@ -1005,12 +1048,13 @@ export const INFLUENTIAL_NON_TOP50 = [
     insight:"The aggressive heartbeat of Argentina's midfield. De Paul's pressing intensity and recovery duels allow Mac Allister and Enzo Fernández to express themselves. His Atlético Madrid experience of high-intensity competitive matches throughout the year makes him the most physically robust member of Argentina's celebrated midfield trio." },
 ];
 
-const mk=(rank,name,nation,natId,pos,club)=>({
+const mk=(rank,name,nation,natId,pos,club,stats={})=>({
   rank,name,nation,natId,pos,club,
   goals:0,assists:0,apps:0,cleanSheets:0,
   interceptions:0,saves:0,penaltySaves:0,
   yellowCards:0,redCards:0,foulsCommitted:0,foulsDrawn:0,
-  rating:0,mins:0
+  rating:0,mins:0,
+  ...stats,
 });
 
 export const INITIAL_PLAYERS = [
@@ -1053,7 +1097,7 @@ export const INITIAL_PLAYERS = [
   mk(37,"Luka Modrić","🇭🇷","CRO","MID","Real Madrid"),
   mk(38,"Christian Pulisic","🇺🇸","USA","FWD","AC Milan"),
   mk(39,"Mike Maignan","🇫🇷","FRA","GK","AC Milan"),
-  mk(40,"Son Heung-min","🇰🇷","KOR","FWD","LAFC"),
+  mk(40,"Son Heung-min","🇰🇷","KOR","FWD","LAFC",{goals:0,assists:0,apps:1,rating:7.1,mins:73,foulsDrawn:3}),
   mk(41,"Ismaïla Sarr","🇸🇳","SEN","FWD","Crystal Palace"),
   mk(42,"Kenan Yıldız","🇹🇷","TUR","FWD","Juventus"),
   mk(43,"Eberechi Eze","🏴󠁧󠁢󠁥󠁮󠁧󠁿","ENG","MID","Arsenal"),
@@ -1064,4 +1108,19 @@ export const INITIAL_PLAYERS = [
   mk(48,"Rafael Leão","🇵🇹","POR","FWD","AC Milan"),
   mk(49,"João Pedro","🇧🇷","BRA","FWD","Chelsea"),
   mk(50,"Jeremie Frimpong","🇳🇱","NED","DEF","Liverpool"),
+];
+
+// ── DAY 1 STANDOUTS (Jun 11, 2026) — players who delivered statistical performances ──
+// Not part of the pre-tournament Top 50, but featured with real Day 1 ratings/stats
+export const DAY1_STANDOUTS = [
+  mk(51,"Hwang In-beom","🇰🇷","KOR","MID","Feyenoord",{goals:1,assists:1,apps:1,rating:8.6,mins:90,foulsDrawn:2,
+    note:"Goal AND assist vs Czechia — third Korean player ever to achieve this in a World Cup match. Equalised with a cut-and-chip finish, then set up Oh Hyeon-gyu's winner with a cross."}),
+  mk(52,"Raúl Jiménez","🇲🇽","MEX","FWD","Club América",{goals:1,assists:0,apps:1,rating:8.2,mins:90,foulsDrawn:4,
+    note:"Scored Mexico's second in the 63rd minute on his home World Cup debut — manager Javier Aguirre called it a 'perfect day' for the 35-year-old."}),
+  mk(53,"Julián Quiñones","🇲🇽","MEX","FWD","Club América",{goals:1,assists:0,apps:1,rating:8.4,mins:79,foulsDrawn:2,
+    note:"Opened the scoring in the 9th minute, running onto a ball won by Erik Lira and firing through Williams' legs. Hit the post before half-time and was Mexico's standout attacker."}),
+  mk(54,"Václav Krejčí","🇨🇿","CZE","DEF","Slavia Prague",{goals:1,assists:0,apps:1,rating:7.3,mins:90,
+    note:"Headed in Czechia's opener from a Souček long throw-in set piece in the 58th minute — Czechia's first goal of WC 2026, though they went on to lose 2-1."}),
+  mk(55,"Oh Hyeon-gyu","🇰🇷","KOR","FWD","Celtic",{goals:1,assists:0,apps:1,rating:8.0,mins:30,
+    note:"Substitute matchwinner — scored the 86th-minute decider from a Hwang In-beom cross after a Paik Seung-ho through ball."}),
 ];
